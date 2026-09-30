@@ -37,7 +37,7 @@ private:
 public:
     Application(int argc, char* argv[]) : app_info(argc, argv),
                                         file_manager(app_info.getStartPath()),
-                                        ui(app_info, students_info, current_state){
+                                        ui(app_info, current_state){
         Log::getInstance().init(
             app_info.getExeDirectory(),
             app_info.getConfig().do_log
