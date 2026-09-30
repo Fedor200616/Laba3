@@ -32,9 +32,12 @@ private:
 
     bool start_with_path;
 
+    UI_Interface ui;
+
 public:
     Application(int argc, char* argv[]) : app_info(argc, argv),
-                                        file_manager(app_info.getStartPath()){
+                                        file_manager(app_info.getStartPath()),
+                                        ui(app_info, students_info, current_state){
         Log::getInstance().init(
             app_info.getExeDirectory(),
             app_info.getConfig().do_log
@@ -50,7 +53,7 @@ public:
             start_with_path = false;
             LOG_INFO("Запуск по умолчанию");
         }
-    }
+    }   
 };
 
 /*Плавность: Чтобы консоль не мерцала при постоянной перерисовке в фазе Show UI, очищайте экран не через system("cls"), а перемещая каретку в начало (0,0) через ANSI-последовательность \033[H или SetConsoleCursorPosition.*/

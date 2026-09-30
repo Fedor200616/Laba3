@@ -5,6 +5,7 @@
 #include <conio.h>
 #include "File.h"
 #include "Application.h"
+#include "Students.h"
 #include "Main.h"
 
 namespace input {
@@ -53,10 +54,27 @@ namespace input {
 
 class UI_Interface {
 private:
+    StateType& state;
+    StudentDB& students_data;
+    Info& app_info;
 
-
+    
 public:
+    UI_Interface(Info& inf, StudentDB& data, StateType& s) : app_info(inf), students_data(data) state(s){};
 
+    StateType getState(){
+        return state;
+    }
+    Info getInfo(){
+        return info;
+    }
+    void changeState(StateType new_state){
+        state = new_state
+    }
+
+
+
+    void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
 
 };
 

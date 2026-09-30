@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 #include "Student.h"
 #include "Log.h"
