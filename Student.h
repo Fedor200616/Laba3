@@ -19,7 +19,7 @@ enum class Inf {
 };
 
 /// <summary>
-/// Класс работы с базой студентов из файла
+/// Класс работы с базой студентов
 /// </summary>
 class StudentDB {
 private:

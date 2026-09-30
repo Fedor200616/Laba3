@@ -20,15 +20,19 @@ namespace input {
 
         Tab = 9,
 
-        Utility = 224,
+        Extended = 224,
         Null = 0
     };
 
-    inline key getKey() {
-        int ch = _getch();
+    inline bool getAnyKey(){
+        while(_getch() == static_cast<int>(key::Extended)){}
+        return true;
+    }
+
+    inline key getKey(int ch = _getch()) {
 
         // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
-        if (ch == 0 || ch == static_cast<int>(key::Utility)) {
+        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
             ch = _getch(); // Читаем второй байт с реальным кодом стрелки
         }
 
@@ -44,6 +48,7 @@ namespace input {
         default:                           return key::Null;
         }
     }
+
 }
 
 class UI_Interface {
@@ -86,6 +91,8 @@ enum class MenuNav {
     Enter,
 
     Add1,
+    Add2,
+    Add3
 };
 
 /// <summary>
@@ -110,7 +117,7 @@ protected:
     
 };
 
-
+/*
 class MainMenu : public MenuLogic {
 private:
 
@@ -134,3 +141,13 @@ public:
     void handleNav(MenuNav nav) override;
 
 };
+*/
+
+class Editor : public MenuLogic {
+private:
+    
+public:
+    Editor(UI_Interface& filepath)
+
+}
+
