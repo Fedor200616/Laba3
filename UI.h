@@ -70,12 +70,9 @@ public:
         state = new_state
     }
 
-
-
     void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
 
 };
-
 
 class MenuInfo {
 public:
@@ -85,9 +82,14 @@ public:
     std::function<std::string()> param = nullptr;
 };
 
+struct Position{
+    unsigned int row = 0;
+    unsigned int col = 0;
+};
+
 struct MenuOut {
-    int total_row;
-    int act_row;
+    position total;
+    position act;
 
     std::string before_show = "";
     std::vector<MenuInfo> menu;
@@ -98,6 +100,8 @@ struct MenuOut {
 
 };
 
+
+
 enum class MenuNav {
     Left,
     Right,
@@ -105,10 +109,12 @@ enum class MenuNav {
     Down,
 
     Enter,
+    Back
 
-    Add1,
-    Add2,
-    Add3
+    KeyTab,
+    KeyBackspace,
+    Add3,
+    Unexpected
 };
 
 /// <summary>
@@ -118,19 +124,21 @@ class MenuLogic {
 public:
     virtual ~MenuLogic() = default;
     
-    virtual void beforeShow(MenuOut& menu) {};
-    virtual void showUI(const MenuOut& menu);
-    virtual void handleNav(MenuNav nav) = 0;
+    StateType menuShow();
 
 protected:
-    MenuOut out;
-    bool finished = false;
-    StateType next_state;
+    MenuOut& menu_out;
+    //bool finished = false;
+    //StateType next_state;
 
     bool windowSize() const;
     MenuNav GetAction(input::key key_code) const;
     virtual std::string menuString() = 0;
     
+    virtual bool beforeShow() = 0;
+    virtual bool showUI() = 0;
+    virtual StateType handleNav() = 0;
+
 };
 
 /*
@@ -161,9 +169,16 @@ public:
 
 class Editor : public MenuLogic {
 private:
-    
-public:
-    Editor(UI_Interface& filepath)
+    UI_Interface& ui;
+    StudentDB& data_base;
 
+
+public:
+    Editor(UI_Interface& interface, StudentDB& students) : ui(interface), data_base(students){};
+
+protected:
+    bool beforeShow() override;
+    bool showUI() override;
+    StateType handleNav() override;
 }
 

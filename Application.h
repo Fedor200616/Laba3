@@ -17,6 +17,8 @@ enum class StateType {
     EditorMenu, //Меню с изменением данных
 
     EXIT,
+
+    NONE,
 };
 
 /// <summary>
