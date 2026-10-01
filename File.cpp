@@ -91,9 +91,11 @@ std::vector<StudentInfo> File::loadFromFile() {
                 type = fileType::ERR;
                 return {};
             }
+            i++;
+            continue;
         }
 
-        res_buf.row = i + 1;
+        res_buf.row = i;
         result.push_back(res_buf);
         i++;
 	}
