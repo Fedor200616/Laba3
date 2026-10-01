@@ -150,6 +150,7 @@
     <ClInclude Include="Log.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Application.h" />
+    <ClInclude Include="States.h" />
     <ClInclude Include="Student.h" />
     <ClInclude Include="UI.h" />
   </ItemGroup>

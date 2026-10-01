@@ -4,9 +4,15 @@
 #include <functional>
 #include <conio.h>
 #include <cstdlib>
+#include <string>
+#include <sstream>
+#include <iomanip>
+
+#include "States.h"
 #include "File.h"
-#include "Application.h"
+#include "Student.h"
 #include "Main.h"
+#include "Log.h"
 
 namespace input {
     enum class key
@@ -32,12 +38,12 @@ namespace input {
 
     inline key getKey(int ch = _getch()) {
 
-        // Р•СЃР»Рё СЃС‡РёС‚РЅ СЃР»СѓР¶РµР±РЅС‹Р№ Р±Р°Р№С‚ СЃС‚СЂРµР»РѕРє/СЂР°СЃС€РёСЂРµРЅРЅС‹С… РєР»Р°РІРёС€ (0 РёР»Рё 224)
+        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
         if (ch == 0 || ch == static_cast<int>(key::Extended)) {
-            ch = _getch(); // Р§РёС‚Р°РµРј РІС‚РѕСЂРѕР№ Р±Р°Р№С‚ СЃ СЂРµР°Р»СЊРЅС‹Рј РєРѕРґРѕРј СЃС‚СЂРµР»РєРё
+            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
         }
 
-        // РџСЂРµРѕР±СЂР°Р·СѓРµРј РєРѕРґ РІ enum
+        // Преобразуем код в enum
         switch (ch) {
         case static_cast<int>(key::Up):    return key::Up;
         case static_cast<int>(key::Down):  return key::Down;
@@ -71,7 +77,7 @@ public:
         state = new_state;
     }
 
-    void show(); //Р¤СѓРЅРєС†РёСЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РЅСѓР¶РЅРѕРіРѕ РїСѓРЅРєС‚Р° РјРµРЅСЋ РѕРЅР° РЅРµ РґРѕР»Р¶РЅР° РѕС‚РІРµС‡Р°С‚СЊ Р·Р° СЃРјРµРЅСѓ Р»РѕРіРёРєРё
+    void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
 
 };
 
@@ -83,8 +89,8 @@ struct MenuStr {
 };
 
 struct Position{
-    unsigned int row = 0;
-    unsigned int col = 0;
+    size_t row = 0;
+    size_t col = 0;
 };
 
 struct MenuOut {
@@ -116,7 +122,7 @@ enum class MenuNav {
 };
 
 /// <summary>
-/// Р‘Р°Р·РѕРІС‹Р№ Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ - СЂРѕРґРёС‚РµР»СЊ РґР»СЏ Р»СЋР±РѕРіРѕ РјРµРЅСЋ
+/// Базовый абстрактный класс - родитель для любого меню
 /// </summary>
 class MenuLogic {
 public:
@@ -129,12 +135,18 @@ protected:
     //bool finished = false;
     //StateType next_state;
 
-    bool windowSize() const;
+    bool windowSize() const {
+        // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
+        std::cout << "\033[H";
+        return true;
+    }
+        
+    
     MenuNav GetAction(input::key key_code) const;
     
-    virtual bool beforeShow() = 0; //Р¤СѓРЅРєС†РёСЏ РґРµР№СЃС‚РІРёСЏ РїРµСЂРµРґ РїРѕРєР°Р·РѕРј РјРµРЅСЋ
-    virtual bool showUI() = 0; // Р¤СѓРЅРєС†РёСЏ РїРѕРєР°Р·Р° РјРµРЅСЋ
-    virtual StateType handleNav() = 0; // Р¤СѓРЅРєС†РёСЏ РѕР±СЂР°Р±РѕС‚РєРё РґРµР№СЃС‚РІРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+    virtual bool beforeShow() = 0; //Функция действия перед показом меню
+    virtual bool showUI() = 0; // Функция показа меню
+    virtual StateType handleNav() = 0; // Функция обработки действий пользователя
 
 };
 
@@ -169,38 +181,20 @@ private:
     UI_Interface& ui;
     StudentDB& data;
 
-    Position& act = menu_out.act;
-
-    int num_width = std::to_string(menu_out.total.row).length();
-	int menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + menu_out.total.col; // 5 - СЌС‚Рѕ РєРѕР»РёС‡РµСЃС‚РІРѕ СЂР°Р·РґРµР»РёС‚РµР»РµР№ '|'
+    int num_width = 0;
+    int menu_width = 0;
 public:
-    Editor(UI_Interface& interface, StudentDB& students) : ui(interface), data(students) {
-		menu_out.total.row = data.size(); // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРѕРє РІ РјРµРЅСЋ
-		menu_out.total.col = data.INFO_COL_COUNT; // РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє РІ РјРµРЅСЋ
-        menu_out.act = { 0, 0 }; // РќР°С‡Р°Р»СЊРЅР°СЏ Р°РєС‚РёРІРЅР°СЏ РїРѕР·РёС†РёСЏ
-        menu_out.before_show = header();
-		for (int i = 0; i < data.size(); i++)
-        {
-            menu_out.menu[i].name = "";
-			menu_out.menu[i].param = [this, i]() { return createString(i); }; // РСЃРїРѕР»СЊР·СѓРµРј РІ РїР°СЂР°РјРµС‚СЂРµ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ, this - СѓРєР°Р·Р°С‚РµР»СЊ РЅР° С‚РµРєСѓС‰РёР№ РѕР±СЉРµРєС‚ РєР»Р°СЃСЃР° Editor, i - РёРЅРґРµРєСЃ СЃС‚СЂРѕРєРё
-			menu_out.menu[i].show = false; //РџРѕРєР°Р· СЃР°РјРёС… РїСѓРЅРєС‚РѕРІ Р±СѓРґРµС‚ РѕРїСЂРµРґРµР»СЏС‚СЊ С„СѓРЅРєС†РёСЏ showUI, РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ С‚РѕРіРѕ, РїРѕРїР°РґР°РµС‚ Р»Рё РїСѓРЅРєС‚ РІ РІРёРґРёРјСѓСЋ РѕР±Р»пїЅпїЅСЃС‚СЊ
-			menu_out.menu[i].entered = true; //РџСѓСЃС‚СЊ РІСЃРµРіРґР° Р±СѓРґРµС‚ РєР°Рє Р·Р°РїРѕР»РЅРµРЅ, РјР± СЃРґРµР»Р°С‚СЊ РїСѓСЃС‚С‹Рµ СЃС‚СЂРѕРєРё РєР°Рє false, РѕРЅРёР¶ С‚РёРїРѕ РЅРµ Р·Р°РїРѕР»РЅРµРЅС‹?
-        }
-        menu_out.ActMark = "";
-		menu_out.InactMark = "";
-        menu_out.post_show = std::string(menu_width, '=') + '\n' + // РЎРѕР·РґР°РµРј СЃС‚СЂРѕРєСѓ РёР· СЃРёРјРІРѕР»РѕРІ '=' РґР»РёРЅРѕР№ menu_width
-            "РСЃРїРѕР»СЊР·СѓР№С‚Рµ ...\n";
-    };
+    Editor(UI_Interface& ui_inter, StudentDB& students);
 
 private: 
 
     /// <summary>
-    /// Р¤СѓРЅРєС†РёСЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ СЃС‚СЂРѕРєРё
+    /// Функция формирования строки
     /// </summary>
-    /// <param name="i">РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё</param>
-    /// <returns>РіРѕС‚РѕРІР°СЏ СЃС„РѕСЂРјРёСЂРѕРІР°РЅРЅР°СЏ СЃС‚СЂРѕРєР°</returns>
-    std::string createString(int i);
-	std::string header(); //С„СѓРЅРєС†РёСЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ С€Р°РїРєРё С‚Р°Р±Р»РёС†С‹
+    /// <param name="i">номер строки</param>
+    /// <returns>готовая сформированная строка</returns>
+    std::string createString(size_t i);
+	std::string header(); //функция формирования шапки таблицы
 
     bool beforeShow() override;
     bool showUI() override;

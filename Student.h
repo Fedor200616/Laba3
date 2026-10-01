@@ -1,7 +1,9 @@
 #pragma once
 #include <iostream>
+#include <vector>
+#include <string>
 
-//Р—Р°РїРёСЃСЊ Рѕ СЃС‚СѓРґРµРЅС‚Рµ
+//Запись о студенте
 struct StudentInfo {
     unsigned int row;
     std::string name;
@@ -19,7 +21,7 @@ enum class Inf {
 };
 
 /// <summary>
-/// РљР»Р°СЃСЃ СЂР°Р±РѕС‚С‹ СЃ Р±Р°Р·РѕР№ СЃС‚СѓРґРµРЅС‚РѕРІ
+/// Класс работы с базой студентов
 /// </summary>
 class StudentDB {
 private:
@@ -30,25 +32,32 @@ public:
     const int GROUP_WIDTH = 12;
     const int PASS_WIDTH = 20;
     const int NUM_WIDTH = 5;
-	const int INFO_COL_COUNT = 5; // РћР±С‰РµРµ С‡РёСЃР»Рѕ РїРѕР»РµР№ РІ СЃС‚СЂСѓРєС‚СѓСЂРµ StudentInfo
+	const int INFO_COL_COUNT = 5; // Общее число полей в структуре StudentInfo
 	
-    int getRow(int i) {
-        return info[i].row;
-    }
-    std::string getName(int i) {
-        return info[i].name;
-    }
-    std::string getGroup(int i) {
-        return info[i].group;
-    }
-    std::string getPass(int i) {
-        return info[i].pass;
-    }
-    std::string getNum(int i) {
-        return info[i].num;
+	void load(const std::vector<StudentInfo>& loaded_data) { // метод загрузки данных из файла в базу
+        info = loaded_data;
     }
 
-    int size() const {
-		return info.size();
-	}
+    unsigned int getRow(size_t i) const {
+        return (i < info.size()) ? info[i].row : 0;
+    }
+    std::string getName(size_t i) const {
+        return (i < info.size()) ? info[i].name : "";
+    }
+    std::string getGroup(size_t i) const {
+        return (i < info.size()) ? info[i].group : "";
+    }
+    std::string getPass(size_t i) const {
+        return (i < info.size()) ? info[i].pass : "";
+    }
+    std::string getNum(size_t i) const {
+        return (i < info.size()) ? info[i].num : "";
+    }
+
+    size_t size() const {
+        return info.size();
+    }
+    bool empty() const {
+        return info.empty();
+    }
 };

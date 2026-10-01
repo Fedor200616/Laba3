@@ -14,7 +14,7 @@ enum class fileType {
     NONE,
     TXT,
     CSV,
-    ERROR
+    ERR
 };
 
 /// <summary>

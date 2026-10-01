@@ -47,6 +47,6 @@ public:
 };
 
 // --- сднамше люйпняш дкъ бшгнбю хг кчанцн йкюяяю ---
-#define LOG_INFO(msg)  Log::getInstance().write("INFO ", msg);
-#define LOG_WARN(msg)  Log::getInstance().write("WARN ", msg);
-#define LOG_ERROR(msg) Log::getInstance().write("ERROR", msg);
+#define LOG_INFO(msg)  Log::getInstance().write("INFO ", msg)
+#define LOG_WARN(msg)  Log::getInstance().write("WARN ", msg)
+#define LOG_ERROR(msg) Log::getInstance().write("ERROR", msg)

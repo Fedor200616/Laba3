@@ -71,12 +71,37 @@ static void addCell(std::ostringstream& ss,
     ss << "|";
 }
 
+Editor::Editor(UI_Interface& ui_inter, StudentDB& students) : ui(ui_inter), data(students) {
+    menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
+    menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
+    menu_out.act = { 0, 0 }; // Начальная активная позиция
 
-std::string Editor::createString(int row)
+    size_t max_rows = menu_out.total.row > 0 ? menu_out.total.row : 1;
+    num_width = static_cast<int>(std::to_string(max_rows).length());
+    menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + static_cast<int>(menu_out.total.col); // 5 - это количество разделителей '|'
+
+    menu_out.before_show = header();
+
+    // Выделяем память / меняем размер вектора под размер данных
+    menu_out.menu.resize(data.size());
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        menu_out.menu[i].name = "";
+        menu_out.menu[i].param = [this, i]() { return createString(i); }; // Используем в параметре для изменения, this - указатель на текущий объект класса Editor, i - индекс строки
+        menu_out.menu[i].show = false; //Показ самих пунктов будет определять функция showUI, в зависимости от того, попадает ли пункт в видимую область
+        menu_out.menu[i].entered = true; //Пусть всегда будет как заполнен, мб сделать пустые строки как false, ониж типо не заполнены?
+    }
+    menu_out.ActMark = "";
+    menu_out.InactMark = "";
+    menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
+        "Используйте стрелочки для навигации, ESC для выхода...\n";
+};
+
+std::string Editor::createString(size_t row)
 {
     std::ostringstream ss;
 
-	bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
+    bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
 
     addCell(
         ss,
@@ -120,38 +145,88 @@ std::string Editor::createString(int row)
 
 std::string Editor::header()
 {
-	std::ostringstream ss;
-	unsigned int num_width = std::to_string(menu_out.total.row).length();
-	addCell(
-		ss,
-		"№",
-		num_width,
-		false
-	);
-	addCell(
-		ss,
-		"Имя",
-		data.NAME_WIDTH,
-		false
-	);
-	addCell(
-		ss,
-		"Группа",
-		data.GROUP_WIDTH,
-		false
-	);
-	addCell(
-		ss,
-		"Пароль",
-		data.PASS_WIDTH,
-		false
-	);
-	addCell(
-		ss,
-		"Номер",
-		data.NUM_WIDTH,
-		false
-	);
-	ss << '\n';
-	return ss.str();
+    std::ostringstream ss;
+    size_t max_rows = menu_out.total.row > 0 ? menu_out.total.row : 1;
+    int header_num_width = static_cast<int>(std::to_string(max_rows).length());
+    addCell(
+        ss,
+        "#",
+        header_num_width,
+        false
+    );
+    addCell(
+        ss,
+        "Имя",
+        data.NAME_WIDTH,
+        false
+    );
+    addCell(
+        ss,
+        "Группа",
+        data.GROUP_WIDTH,
+        false
+    );
+    addCell(
+        ss,
+        "Пароль",
+        data.PASS_WIDTH,
+        false
+    );
+    addCell(
+        ss,
+        "Номер",
+        data.NUM_WIDTH,
+        false
+    );
+    ss << '\n';
+    return ss.str();
+}
+
+bool Editor::beforeShow() {
+    windowSize();
+    return true;
+}
+
+bool Editor::showUI() {
+    std::cout << menu_out.before_show;
+
+    if (data.empty()) {
+        LOG_ERROR("Файл пуст или не удалось прочитать данные");
+        std::cout << "  [Файл пуст или не удалось прочитать данные]\n";
+    }
+    else {
+        for (size_t i = 0; i < data.size(); ++i) {
+            std::cout << createString(i);
+        }
+    }
+
+    std::cout << menu_out.post_show;
+    return true;
+}
+
+StateType Editor::handleNav() {
+    input::key key = input::getKey();
+    MenuNav nav = GetAction(key);
+
+    switch (nav) {
+    case MenuNav::Up:
+        if (menu_out.act.row > 0) menu_out.act.row--;
+        break;
+    case MenuNav::Down:
+        if (menu_out.act.row + 1 < menu_out.total.row) menu_out.act.row++;
+        break;
+    case MenuNav::Left:
+        if (menu_out.act.col > 0) menu_out.act.col--;
+        break;
+    case MenuNav::Right:
+        if (menu_out.act.col + 1 < menu_out.total.col) menu_out.act.col++;
+        break;
+    case MenuNav::Back:
+        LOG_INFO("Пользователь нажал ESC. Выход из просмотрщика.");
+        return StateType::EXIT;
+    default:
+        break;
+    }
+
+    return StateType::NONE;
 }
