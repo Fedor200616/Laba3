@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include <Windows.h>
 #include <conio.h>
 #include <cstdlib>
 #include <string>
@@ -38,12 +39,12 @@ namespace input {
 
     inline key getKey(int ch = _getch()) {
 
-        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
+        // Р•СЃР»Рё СЃС‡РёС‚РЅ СЃР»СѓР¶РµР±РЅС‹Р№ Р±Р°Р№С‚ СЃС‚СЂРµР»РѕРє/СЂР°СЃС€РёСЂРµРЅРЅС‹С… РєР»Р°РІРёС€ (0 РёР»Рё 224)
         if (ch == 0 || ch == static_cast<int>(key::Extended)) {
-            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
+            ch = _getch(); // Р§РёС‚Р°РµРј РІС‚РѕСЂРѕР№ Р±Р°Р№С‚ СЃ СЂРµР°Р»СЊРЅС‹Рј РєРѕРґРѕРј СЃС‚СЂРµР»РєРё
         }
 
-        // Преобразуем код в enum
+        // РџСЂРµРѕР±СЂР°Р·СѓРµРј РєРѕРґ РІ enum
         switch (ch) {
         case static_cast<int>(key::Up):    return key::Up;
         case static_cast<int>(key::Down):  return key::Down;
@@ -67,6 +68,13 @@ private:
 public:
     UI_Interface(Info& inf, StateType& s) : app_info(inf), state(s){};
 
+    bool windowSize() const {
+        // Р’РѕР·РІСЂР°С‰Р°РµРј РєСѓСЂСЃРѕСЂ РІ РЅР°С‡Р°Р»Рѕ СЌРєСЂР°РЅР° (Р±РµР· СЃР±СЂРѕСЃР° СЌРєСЂР°РЅР° Рё РјРµСЂС†Р°РЅРёСЏ)
+        std::cout << "\033[H";
+        
+        return true;
+    }
+
     StateType getState(){
         return state;
     }
@@ -77,7 +85,7 @@ public:
         state = new_state;
     }
 
-    void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
+    void show(); //Р¤СѓРЅРєС†РёСЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РЅСѓР¶РЅРѕРіРѕ РїСѓРЅРєС‚Р° РјРµРЅСЋ РѕРЅР° РЅРµ РґРѕР»Р¶РЅР° РѕС‚РІРµС‡Р°С‚СЊ Р·Р° СЃРјРµРЅСѓ Р»РѕРіРёРєРё
 
 };
 
@@ -122,7 +130,7 @@ enum class MenuNav {
 };
 
 /// <summary>
-/// Базовый абстрактный класс - родитель для любого меню
+/// Р‘Р°Р·РѕРІС‹Р№ Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ - СЂРѕРґРёС‚РµР»СЊ РґР»СЏ Р»СЋР±РѕРіРѕ РјРµРЅСЋ
 /// </summary>
 class MenuLogic {
 public:
@@ -133,20 +141,13 @@ public:
 protected:
     MenuOut menu_out;
     //bool finished = false;
-    //StateType next_state;
-
-    bool windowSize() const {
-        // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
-        std::cout << "\033[H";
-        return true;
-    }
-        
+    //StateType next_state;      
     
     MenuNav GetAction(input::key key_code) const;
     
-    virtual bool beforeShow() = 0; //Функция действия перед показом меню
-    virtual bool showUI() = 0; // Функция показа меню
-    virtual StateType handleNav() = 0; // Функция обработки действий пользователя
+    virtual bool beforeShow() = 0; //Р¤СѓРЅРєС†РёСЏ РґРµР№СЃС‚РІРёСЏ РїРµСЂРµРґ РїРѕРєР°Р·РѕРј РјРµРЅСЋ
+    virtual bool showUI() = 0; // Р¤СѓРЅРєС†РёСЏ РїРѕРєР°Р·Р° РјРµРЅСЋ
+    virtual StateType handleNav() = 0; // Р¤СѓРЅРєС†РёСЏ РѕР±СЂР°Р±РѕС‚РєРё РґРµР№СЃС‚РІРёР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
 
 };
 
@@ -189,12 +190,12 @@ public:
 private: 
 
     /// <summary>
-    /// Функция формирования строки
+    /// Р¤СѓРЅРєС†РёСЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ СЃС‚СЂРѕРєРё
     /// </summary>
-    /// <param name="i">номер строки</param>
-    /// <returns>готовая сформированная строка</returns>
+    /// <param name="i">РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё</param>
+    /// <returns>РіРѕС‚РѕРІР°СЏ СЃС„РѕСЂРјРёСЂРѕРІР°РЅРЅР°СЏ СЃС‚СЂРѕРєР°</returns>
     std::string createString(size_t i);
-	std::string header(); //функция формирования шапки таблицы
+	std::string header(); //С„СѓРЅРєС†РёСЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ С€Р°РїРєРё С‚Р°Р±Р»РёС†С‹
 
     bool beforeShow() override;
     bool showUI() override;

@@ -28,7 +28,7 @@ MenuNav MenuLogic::GetAction(input::key key_code) const
         return MenuNav::KeyTab;
 
     default:
-        return MenuNav::Unexpected; // возвращает для других значений
+        return MenuNav::Unexpected; // РІРѕР·РІСЂР°С‰Р°РµС‚ РґР»СЏ РґСЂСѓРіРёС… Р·РЅР°С‡РµРЅРёР№
     }
 }
 
@@ -43,26 +43,47 @@ StateType MenuLogic::menuShow()
     return next_state;
 }
 
+static size_t utf8Length(const std::string& str) //РЈР·РЅР°РµРј РґР»РёРЅСѓ СЃС‚СЂРѕРєРё РІ СЃРёРјРІРѕР»Р°С…, Р° РЅРµ РІ Р±Р°Р№С‚Р°С…, РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ СЂСѓСЃСЃРєРёС… Р±СѓРєРІ
+{
+    size_t count = 0;
+
+    for (unsigned char c : str)
+    {
+		if ((c & 0xC0) != 0x80) // Р•СЃР»Рё СЃС‚Р°СЂС€РёРµ РґРІР° Р±РёС‚Р° РЅРµ СЂР°РІРЅС‹ 10, Р·РЅР°С‡РёС‚ СЌС‚Рѕ РЅР°С‡Р°Р»Рѕ РЅРѕРІРѕРіРѕ СЃРёРјРІРѕР»Р°
+            ++count;
+    }
+
+    return count;
+}
+
+static std::string padRight(const std::string& str, size_t width) // Р¤СѓРЅРєС†РёСЏ РґР»СЏ РІС‹СЂР°РІРЅРёРІР°РЅРёСЏ СЃС‚СЂРѕРєРё РїРѕ С€РёСЂРёРЅРµ, СѓС‡РёС‚С‹РІР°СЏ UTF-8 СЃРёРјРІРѕР»С‹
+{
+    size_t length = utf8Length(str);
+
+    if (length >= width)
+        return str;
+
+    return str + std::string(width - length, ' ');
+}
 
 /// <summary>
-/// Вывод на экран отдельной ячейки
+/// Р’С‹РІРѕРґ РЅР° СЌРєСЂР°РЅ РѕС‚РґРµР»СЊРЅРѕР№ СЏС‡РµР№РєРё
 /// </summary>
-/// <param name="ss">поток ввода</param>
-/// <param name="value">текст</param>
-/// <param name="width">Ширина ячейки</param>
-/// <param name="active">Активна ли ячейка</param>
-static void addCell(std::ostringstream& ss,
+/// <param name="ss">РїРѕС‚РѕРє РІРІРѕРґР°</param>
+/// <param name="value">С‚РµРєСЃС‚</param>
+/// <param name="width">РЁРёСЂРёРЅР° СЏС‡РµР№РєРё</param>
+/// <param name="active">РђРєС‚РёРІРЅР° Р»Рё СЏС‡РµР№РєР°</param>
+static void addCell(
+    std::ostringstream& ss,
     const std::string& value,
-    int width,
+    size_t width,
     bool active)
 {
     if (active)
-        ss << "\033[97m";
+        ss << "\033[30;47m";
 
     ss << " "
-        << std::left
-        << std::setw(width)
-        << value
+        << padRight(value, width)
         << " ";
 
     if (active)
@@ -72,36 +93,36 @@ static void addCell(std::ostringstream& ss,
 }
 
 Editor::Editor(UI_Interface& ui_inter, StudentDB& students) : ui(ui_inter), data(students) {
-    menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
-    menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
-    menu_out.act = { 0, 0 }; // Начальная активная позиция
+    menu_out.total.row = data.size(); // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј РѕР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРѕРє РІ РјРµРЅСЋ
+    menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє РІ РјРµРЅСЋ
+    menu_out.act = { 0, 0 }; // РќР°С‡Р°Р»СЊРЅР°СЏ Р°РєС‚РёРІРЅР°СЏ РїРѕР·РёС†РёСЏ
 
     size_t max_rows = menu_out.total.row > 0 ? menu_out.total.row : 1;
     num_width = static_cast<int>(std::to_string(max_rows).length());
-    menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + static_cast<int>(menu_out.total.col); // 5 - это количество разделителей '|'
+    menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + static_cast<int>(menu_out.total.col);
 
     menu_out.before_show = header();
 
-    // Выделяем память / меняем размер вектора под размер данных
+    // Р’С‹РґРµР»СЏРµРј РїР°РјСЏС‚СЊ / РјРµРЅСЏРµРј СЂР°Р·РјРµСЂ РІРµРєС‚РѕСЂР° РїРѕРґ СЂР°Р·РјРµСЂ РґР°РЅРЅС‹С…
     menu_out.menu.resize(data.size());
     for (size_t i = 0; i < data.size(); i++)
     {
         menu_out.menu[i].name = "";
-        menu_out.menu[i].param = [this, i]() { return createString(i); }; // Используем в параметре для изменения, this - указатель на текущий объект класса Editor, i - индекс строки
-        menu_out.menu[i].show = false; //Показ самих пунктов будет определять функция showUI, в зависимости от того, попадает ли пункт в видимую область
-        menu_out.menu[i].entered = true; //Пусть всегда будет как заполнен, мб сделать пустые строки как false, ониж типо не заполнены?
+        menu_out.menu[i].param = [this, i]() { return createString(i); }; // РСЃРїРѕР»СЊР·СѓРµРј РІ РїР°СЂР°РјРµС‚СЂРµ РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ, this - СѓРєР°Р·Р°С‚РµР»СЊ РЅР° С‚РµРєСѓС‰РёР№ РѕР±СЉРµРєС‚ РєР»Р°СЃСЃР° Editor, i - РёРЅРґРµРєСЃ СЃС‚СЂРѕРєРё
+        menu_out.menu[i].show = false; //РџРѕРєР°Р· СЃР°РјРёС… РїСѓРЅРєС‚РѕРІ Р±СѓРґРµС‚ РѕРїСЂРµРґРµР»СЏС‚СЊ С„СѓРЅРєС†РёСЏ showUI, РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ С‚РѕРіРѕ, РїРѕРїР°РґР°РµС‚ Р»Рё РїСѓРЅРєС‚ РІ РІРёРґРёРјСѓСЋ РѕР±Р»Р°СЃС‚СЊ
+        menu_out.menu[i].entered = true; //РџСѓСЃС‚СЊ РІСЃРµРіРґР° Р±СѓРґРµС‚ РєР°Рє Р·Р°РїРѕР»РЅРµРЅ, РјР± СЃРґРµР»Р°С‚СЊ РїСѓСЃС‚С‹Рµ СЃС‚СЂРѕРєРё РєР°Рє false, РѕРЅРёР¶ С‚РёРїРѕ РЅРµ Р·Р°РїРѕР»РЅРµРЅС‹?
     }
     menu_out.ActMark = "";
     menu_out.InactMark = "";
-    menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
-        "Используйте стрелочки для навигации, ESC для выхода...\n";
+    menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // РЎРѕР·РґР°РµРј СЃС‚СЂРѕРєСѓ РёР· СЃРёРјРІРѕР»РѕРІ '=' РґР»РёРЅРѕР№ menu_width
+        "РСЃРїРѕР»СЊР·СѓР№С‚Рµ СЃС‚СЂРµР»РѕС‡РєРё РґР»СЏ РЅР°РІРёРіР°С†РёРё, ESC РґР»СЏ РІС‹С…РѕРґР°...\n";
 };
 
 std::string Editor::createString(size_t row)
 {
     std::ostringstream ss;
 
-    bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
+    bool active_row = (menu_out.act.row == row); //РїСЂРѕРІРµСЂРєР°, Р°РєС‚РёРІРЅР° Р»Рё СЃС‚СЂРѕРєР°
 
     addCell(
         ss,
@@ -156,25 +177,25 @@ std::string Editor::header()
     );
     addCell(
         ss,
-        "Имя",
+        "РРјСЏ",
         data.NAME_WIDTH,
         false
     );
     addCell(
         ss,
-        "Группа",
+        "Р“СЂСѓРїРїР°",
         data.GROUP_WIDTH,
         false
     );
     addCell(
         ss,
-        "Пароль",
+        "РџР°СЂРѕР»СЊ",
         data.PASS_WIDTH,
         false
     );
     addCell(
         ss,
-        "Номер",
+        "РќРѕРјРµСЂ",
         data.NUM_WIDTH,
         false
     );
@@ -183,7 +204,7 @@ std::string Editor::header()
 }
 
 bool Editor::beforeShow() {
-    windowSize();
+    ui.windowSize();
     return true;
 }
 
@@ -191,8 +212,8 @@ bool Editor::showUI() {
     std::cout << menu_out.before_show;
 
     if (data.empty()) {
-        LOG_ERROR("Файл пуст или не удалось прочитать данные");
-        std::cout << "  [Файл пуст или не удалось прочитать данные]\n";
+        LOG_ERROR("Р¤Р°Р№Р» РїСѓСЃС‚ РёР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ РґР°РЅРЅС‹Рµ");
+        std::cout << "  [Р¤Р°Р№Р» РїСѓСЃС‚ РёР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ РґР°РЅРЅС‹Рµ]\n";
     }
     else {
         for (size_t i = 0; i < data.size(); ++i) {
@@ -222,7 +243,7 @@ StateType Editor::handleNav() {
         if (menu_out.act.col + 1 < menu_out.total.col) menu_out.act.col++;
         break;
     case MenuNav::Back:
-        LOG_INFO("Пользователь нажал ESC. Выход из просмотрщика.");
+        LOG_INFO("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅР°Р¶Р°Р» ESC. Р’С‹С…РѕРґ РёР· РїСЂРѕСЃРјРѕС‚СЂС‰РёРєР°.");
         return StateType::EXIT;
     default:
         break;

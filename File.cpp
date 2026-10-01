@@ -2,7 +2,7 @@
 #include "Log.h"
 
 namespace {
-    // Вспомогательная функция для удаления лишних пробелов по краям поля
+    // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ СѓРґР°Р»РµРЅРёСЏ Р»РёС€РЅРёС… РїСЂРѕР±РµР»РѕРІ РїРѕ РєСЂР°СЏРј РїРѕР»СЏ
     inline std::string trim(const std::string& str) {
         size_t first = str.find_first_not_of(" \t\r\n");
         if (first == std::string::npos) return "";
@@ -21,20 +21,20 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
 
     int field_idx = 0;
 
-    char sep_ch = (type == fileType::CSV) ? ',' : '|'; // требует доработок, т.к. тхт тоже может быть с запятыми
+    char sep_ch = (type == fileType::CSV) ? ',' : '|'; // С‚СЂРµР±СѓРµС‚ РґРѕСЂР°Р±РѕС‚РѕРє, С‚.Рє. С‚С…С‚ С‚РѕР¶Рµ РјРѕР¶РµС‚ Р±С‹С‚СЊ СЃ Р·Р°РїСЏС‚С‹РјРё
 
     while (std::getline(iss, field, sep_ch)) {
         std::string clean_field = trim(field);
 
-        //Пропускаем первое пустое поле, если строка начиналась с '|'
+        //РџСЂРѕРїСѓСЃРєР°РµРј РїРµСЂРІРѕРµ РїСѓСЃС‚РѕРµ РїРѕР»Рµ, РµСЃР»Рё СЃС‚СЂРѕРєР° РЅР°С‡РёРЅР°Р»Р°СЃСЊ СЃ '|'
         if (clean_field.empty() && field_idx == 0) {
             continue;
         }
 
-        field_idx++; //ОБЯЗАТЕЛЬНО увеличиваем индекс колонки!
+        field_idx++; //РћР‘РЇР—РђРўР•Р›Р¬РќРћ СѓРІРµР»РёС‡РёРІР°РµРј РёРЅРґРµРєСЃ РєРѕР»РѕРЅРєРё!
 
-        if (clean_field == "Нет данных") {
-            clean_field = "-"; // Либо оставляем "Нет данных", если так нужно по ТЗ
+        if (clean_field == "РќРµС‚ РґР°РЅРЅС‹С…") {
+            clean_field = "-"; // Р›РёР±Рѕ РѕСЃС‚Р°РІР»СЏРµРј "РќРµС‚ РґР°РЅРЅС‹С…", РµСЃР»Рё С‚Р°Рє РЅСѓР¶РЅРѕ РїРѕ РўР—
         }
 
         switch (field_idx) {
@@ -51,7 +51,7 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
             res.pass = clean_field;
             break;
         default:
-            break; // Если полей больше 4, просто игнорируем
+            break; // Р•СЃР»Рё РїРѕР»РµР№ Р±РѕР»СЊС€Рµ 4, РїСЂРѕСЃС‚Рѕ РёРіРЅРѕСЂРёСЂСѓРµРј
         }
     }
 
@@ -60,8 +60,9 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
 
 std::vector<StudentInfo> File::loadFromFile() {
     std::vector<StudentInfo> result;
+	LOG_INFO("РћС‚РєСЂС‹С‚РёРµ С„Р°Р№Р»Р°: " + filePath.string());
     if (filePath.empty() || !fs::exists(filePath)) {
-        LOG_ERROR("Файл не существует: " + filePath.string());
+        LOG_ERROR("Р¤Р°Р№Р» РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚: " + filePath.string());
         type = fileType::ERR;
         return result;
     }
@@ -69,10 +70,10 @@ std::vector<StudentInfo> File::loadFromFile() {
 	std::ifstream ifile(filePath);
 
 	
-	std::string str_buf; // промежуточная строка из которой будем брать инфу
+	std::string str_buf; // РїСЂРѕРјРµР¶СѓС‚РѕС‡РЅР°СЏ СЃС‚СЂРѕРєР° РёР· РєРѕС‚РѕСЂРѕР№ Р±СѓРґРµРј Р±СЂР°С‚СЊ РёРЅС„Сѓ
 
-	if (!ifile.is_open()) {           // проверяем
-		LOG_ERROR("Не удалось открыть файл фамилий\n");
+	if (!ifile.is_open()) {           // РїСЂРѕРІРµСЂСЏРµРј
+		LOG_ERROR("РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РєСЂС‹С‚СЊ С„Р°Р№Р» С„Р°РјРёР»РёР№\n");
         type = fileType::ERR;
 		return result;
 	}
@@ -82,12 +83,12 @@ std::vector<StudentInfo> File::loadFromFile() {
         if (trim(str_buf).empty()) continue;
 		StudentInfo res_buf = copyFromString(str_buf, i);
         if (i == 0) {
-            bool is_norm = (res_buf.name == "Имя" &&
-                res_buf.group == "Группа" &&
-                res_buf.num == "Номер" &&
-                res_buf.pass == "Пароль");
+            bool is_norm = (res_buf.name == "РРјСЏ" &&
+                res_buf.group == "Р“СЂСѓРїРїР°" &&
+                res_buf.num == "РќРѕРјРµСЂ" &&
+                res_buf.pass == "РџР°СЂРѕР»СЊ");
             if (!is_norm) {
-                LOG_ERROR("Ошибка в шапке файла");
+                LOG_ERROR("РћС€РёР±РєР° РІ С€Р°РїРєРµ С„Р°Р№Р»Р°");
                 type = fileType::ERR;
                 return {};
             }
@@ -99,6 +100,6 @@ std::vector<StudentInfo> File::loadFromFile() {
         result.push_back(res_buf);
         i++;
 	}
-    LOG_INFO("Файл обработан");
+    LOG_INFO("Р¤Р°Р№Р» РѕР±СЂР°Р±РѕС‚Р°РЅ");
     return result;
 }

@@ -7,14 +7,14 @@
 
 namespace fs = std::filesystem;
 
-//Синглтон, обьект один
+//РЎРёРЅРіР»С‚РѕРЅ, РѕР±СЊРµРєС‚ РѕРґРёРЅ
 
 class Log {
 private:
     fs::path log_path;
     bool need_log = false;
 
-    Log() = default; // Закрытый конструктор, гарантия единственного обьекта
+    Log() = default; // Р—Р°РєСЂС‹С‚С‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ, РіР°СЂР°РЅС‚РёСЏ РµРґРёРЅСЃС‚РІРµРЅРЅРѕРіРѕ РѕР±СЊРµРєС‚Р°
 
 public:
     Log(const Log&) = delete;
@@ -28,6 +28,14 @@ public:
     void init(fs::path exe_directory, bool enable_logging) {
         log_path = exe_directory / "app.log";
         need_log = enable_logging;
+
+        if (need_log) {
+            std::ofstream log_file(log_path, std::ios::trunc);
+
+            if (log_file.is_open()) {
+                log_file << "\xEF\xBB\xBF"; //Р­С‚Рѕ UTF - 8 BOM: С‡С‚РѕР± РІРёРЅ РїРѕРЅРёРјР°Р» С‡С‚Рѕ СЌС‚Рѕ UTF-8
+            }
+        }
     }
 
     void write(const std::string& level, const std::string& message) {
@@ -46,7 +54,7 @@ public:
     }
 };
 
-// --- УДОБНЫЕ МАКРОСЫ ДЛЯ ВЫЗОВА ИЗ ЛЮБОГО КЛАССА ---
+// --- РЈР”РћР‘РќР«Р• РњРђРљР РћРЎР« Р”Р›РЇ Р’Р«Р—РћР’Рђ РР— Р›Р®Р‘РћР“Рћ РљР›РђРЎРЎРђ ---
 #define LOG_INFO(msg)  Log::getInstance().write("INFO ", msg)
 #define LOG_WARN(msg)  Log::getInstance().write("WARN ", msg)
 #define LOG_ERROR(msg) Log::getInstance().write("ERROR", msg)

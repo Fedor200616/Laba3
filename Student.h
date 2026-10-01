@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-//Запись о студенте
+//Р—Р°РїРёСЃСЊ Рѕ СЃС‚СѓРґРµРЅС‚Рµ
 struct StudentInfo {
     unsigned int row;
     std::string name;
@@ -21,7 +21,7 @@ enum class Inf {
 };
 
 /// <summary>
-/// Класс работы с базой студентов
+/// РљР»Р°СЃСЃ СЂР°Р±РѕС‚С‹ СЃ Р±Р°Р·РѕР№ СЃС‚СѓРґРµРЅС‚РѕРІ
 /// </summary>
 class StudentDB {
 private:
@@ -32,9 +32,9 @@ public:
     const int GROUP_WIDTH = 12;
     const int PASS_WIDTH = 20;
     const int NUM_WIDTH = 5;
-	const int INFO_COL_COUNT = 5; // Общее число полей в структуре StudentInfo
+	const int INFO_COL_COUNT = 4; // РћР±С‰РµРµ С‡РёСЃР»Рѕ РїРѕР»РµР№ РІ СЃС‚СЂСѓРєС‚СѓСЂРµ StudentInfo
 	
-	void load(const std::vector<StudentInfo>& loaded_data) { // метод загрузки данных из файла в базу
+	void load(const std::vector<StudentInfo>& loaded_data) { // РјРµС‚РѕРґ Р·Р°РіСЂСѓР·РєРё РґР°РЅРЅС‹С… РёР· С„Р°Р№Р»Р° РІ Р±Р°Р·Сѓ
         info = loaded_data;
     }
 

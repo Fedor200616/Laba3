@@ -8,8 +8,8 @@
 
 
 int main(int argc, char* argv[]) {
-    SetConsoleOutputCP(1251);
-    SetConsoleCP(1251);
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8); 
     Application app(argc, argv);
     app.run();
     return 0;

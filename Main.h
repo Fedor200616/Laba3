@@ -10,11 +10,21 @@ struct AppConfig {
     fs::path filePath; 
     bool testMode = false;
     bool do_log = false;
+	std::string arg_str; // РЎС‚СЂРѕРєР° СЃ Р°СЂРіСѓРјРµРЅС‚Р°РјРё РєРѕРјР°РЅРґРЅРѕР№ СЃС‚СЂРѕРєРё
 
     static AppConfig parseArgs(int argc, char* argv[]) {
         AppConfig config;
+
+        for (int i = 0; i < argc; ++i) {
+            if (i > 0)
+                config.arg_str += ' ';
+
+            config.arg_str += argv[i];
+        }
+
         for (int i = 1; i < argc; ++i) {
             std::string_view arg(argv[i]);
+
             if (arg == "-f" && i + 1 < argc) {
                 config.filePath = argv[++i];
             }
@@ -25,20 +35,21 @@ struct AppConfig {
                 config.testMode = true;
             }
         }
+
         return config;
     }
 };
 
 /// <summary>
-/// Класс информации о программе
+/// РљР»Р°СЃСЃ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РїСЂРѕРіСЂР°РјРјРµ
 /// </summary>
 class Info {
 private:
-    fs::path exe_filepath; //Путь к exe файлу программы
+    fs::path exe_filepath; //РџСѓС‚СЊ Рє exe С„Р°Р№Р»Сѓ РїСЂРѕРіСЂР°РјРјС‹
     bool initExePath(int argc, char* argv[]) {
         if (argc > 0 && argv && argv[0]) {
             exe_filepath = fs::absolute(argv[0]);
-            LOG_INFO("Путь к exe файлу: " + exe_filepath.string());
+            LOG_INFO("РџСѓС‚СЊ Рє exe С„Р°Р№Р»Сѓ: " + exe_filepath.string());
             return true;
         }
         return false;
@@ -50,7 +61,7 @@ public:
     Info(int argc, char* argv[]) {
         if (!initExePath(argc, argv)) {
             exe_filepath = fs::current_path();
-            LOG_ERROR("Ошибка нахождения пути к exe, выбран путь по умолчанию " + exe_filepath.string());
+            LOG_ERROR("РћС€РёР±РєР° РЅР°С…РѕР¶РґРµРЅРёСЏ РїСѓС‚Рё Рє exe, РІС‹Р±СЂР°РЅ РїСѓС‚СЊ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ " + exe_filepath.string());
         }
         config = AppConfig::parseArgs(argc, argv);
     }

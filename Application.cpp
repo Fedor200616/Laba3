@@ -10,7 +10,9 @@ Application::Application(int argc, char* argv[])
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
     );
-    LOG_INFO("Приложение инициализировано");
+	std::string log_message = "РџСЂРёР»РѕР¶РµРЅРёРµ Р·Р°РїСѓС‰РµРЅРѕ СЃ Р°СЂРіСѓРјРµРЅС‚Р°РјРё: " + app_info.getConfig().arg_str;
+
+    LOG_INFO(log_message);
 
     fs::path start_path = app_info.getStartPath();
     if (!start_path.empty() && fs::exists(start_path)) {
@@ -21,12 +23,12 @@ Application::Application(int argc, char* argv[])
         start_with_path = true;
     }
     else {
-        LOG_WARN("Файл не указан или не найден.");
+        LOG_WARN("Р¤Р°Р№Р» РЅРµ СѓРєР°Р·Р°РЅ РёР»Рё РЅРµ РЅР°Р№РґРµРЅ.");
     }
 }
 
 void Application::run() {
-    // Первоначальная очистка экрана
+    // РџРµСЂРІРѕРЅР°С‡Р°Р»СЊРЅР°СЏ РѕС‡РёСЃС‚РєР° СЌРєСЂР°РЅР°
     std::cout << "\033[2J\033[H";
 
     while (current_state != StateType::EXIT) {
@@ -35,9 +37,9 @@ void Application::run() {
             current_state = editor.menuShow();
         }
         else {
-            std::cout << "Запустите программу с флагом -f <путь_к_файлу>\n";
-            std::cout << "Пример: ./program -f students.txt -l\n\n";
-            std::cout << "Нажмите любую клавишу для выхода...";
+            std::cout << "Р—Р°РїСѓСЃС‚РёС‚Рµ РїСЂРѕРіСЂР°РјРјСѓ СЃ С„Р»Р°РіРѕРј -f <РїСѓС‚СЊ_Рє_С„Р°Р№Р»Сѓ>\n";
+            std::cout << "РџСЂРёРјРµСЂ: ./program -f students.txt -l\n\n";
+            std::cout << "РќР°Р¶РјРёС‚Рµ Р»СЋР±СѓСЋ РєР»Р°РІРёС€Сѓ РґР»СЏ РІС‹С…РѕРґР°...";
             input::getAnyKey();
             break;
         }

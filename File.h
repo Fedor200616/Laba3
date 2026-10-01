@@ -18,13 +18,13 @@ enum class fileType {
 };
 
 /// <summary>
-/// Отвечает за работу с файлом, переносы в него и из него массивов
+/// РћС‚РІРµС‡Р°РµС‚ Р·Р° СЂР°Р±РѕС‚Сѓ СЃ С„Р°Р№Р»РѕРј, РїРµСЂРµРЅРѕСЃС‹ РІ РЅРµРіРѕ Рё РёР· РЅРµРіРѕ РјР°СЃСЃРёРІРѕРІ
 /// </summary>
 class File {
 private:
-    fs::path filePath = ""; // путь к файлу
-    fileType type = fileType::NONE; // тип файла
-    bool is_modified = false; // Был ли модифицирован файл
+    fs::path filePath = ""; // РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ
+    fileType type = fileType::NONE; // С‚РёРї С„Р°Р№Р»Р°
+    bool is_modified = false; // Р‘С‹Р» Р»Рё РјРѕРґРёС„РёС†РёСЂРѕРІР°РЅ С„Р°Р№Р»
 
     StudentInfo copyFromString(const std::string& str_buf, unsigned int i);
 public:
@@ -32,7 +32,7 @@ public:
 
     File(fs::path file){
         filePath = file;
-        LOG_INFO(std::string("Путь к файлу ") + filePath.string());
+        LOG_INFO(std::string("РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ ") + filePath.string());
     }
     File() {}
 
