@@ -3,6 +3,7 @@
 #include <vector>
 #include <functional>
 #include <conio.h>
+#include <cstdlib>
 #include "File.h"
 #include "Application.h"
 #include "Main.h"
@@ -64,18 +65,17 @@ public:
         return state;
     }
     Info getInfo(){
-        return info;
+        return app_info;
     }
     void changeState(StateType new_state){
-        state = new_state
+        state = new_state;
     }
 
     void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
 
 };
 
-class MenuInfo {
-public:
+struct MenuStr {
     std::string name;
     bool show = true;
     bool entered = true;
@@ -88,19 +88,17 @@ struct Position{
 };
 
 struct MenuOut {
-    position total;
-    position act;
+    Position total;
+    Position act;
 
     std::string before_show = "";
-    std::vector<MenuInfo> menu;
+    std::vector<MenuStr> menu;
     std::string post_show = "";
 
     std::string ActMark = "->";
     std::string InactMark = "  ";
 
 };
-
-
 
 enum class MenuNav {
     Left,
@@ -109,7 +107,7 @@ enum class MenuNav {
     Down,
 
     Enter,
-    Back
+    Back,
 
     KeyTab,
     KeyBackspace,
@@ -127,17 +125,16 @@ public:
     StateType menuShow();
 
 protected:
-    MenuOut& menu_out;
+    MenuOut menu_out;
     //bool finished = false;
     //StateType next_state;
 
     bool windowSize() const;
     MenuNav GetAction(input::key key_code) const;
-    virtual std::string menuString() = 0;
     
-    virtual bool beforeShow() = 0;
-    virtual bool showUI() = 0;
-    virtual StateType handleNav() = 0;
+    virtual bool beforeShow() = 0; //Функция действия перед показом меню
+    virtual bool showUI() = 0; // Функция показа меню
+    virtual StateType handleNav() = 0; // Функция обработки действий пользователя
 
 };
 
@@ -170,15 +167,43 @@ public:
 class Editor : public MenuLogic {
 private:
     UI_Interface& ui;
-    StudentDB& data_base;
+    StudentDB& data;
 
+    Position& act = menu_out.act;
 
+    int num_width = std::to_string(menu_out.total.row).length();
+	int menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + menu_out.total.col; // 5 - это количество разделителей '|'
 public:
-    Editor(UI_Interface& interface, StudentDB& students) : ui(interface), data_base(students){};
+    Editor(UI_Interface& interface, StudentDB& students) : ui(interface), data(students) {
+		menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
+		menu_out.total.col = data.INFO_COL_COUNT; // Общее количество колонок в меню
+        menu_out.act = { 0, 0 }; // Начальная активная позиция
+        menu_out.before_show = header();
+		for (int i = 0; i < data.size(); i++)
+        {
+            menu_out.menu[i].name = "";
+			menu_out.menu[i].param = [this, i]() { return createString(i); }; // Используем в параметре для изменения, this - указатель на текущий объект класса Editor, i - индекс строки
+			menu_out.menu[i].show = false; //Показ самих пунктов будет определять функция showUI, в зависимости от того, попадает ли пункт в видимую обл��сть
+			menu_out.menu[i].entered = true; //Пусть всегда будет как заполнен, мб сделать пустые строки как false, ониж типо не заполнены?
+        }
+        menu_out.ActMark = "";
+		menu_out.InactMark = "";
+        menu_out.post_show = std::string(menu_width, '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
+            "Используйте ...\n";
+    };
 
-protected:
+private: 
+
+    /// <summary>
+    /// Функция формирования строки
+    /// </summary>
+    /// <param name="i">номер строки</param>
+    /// <returns>готовая сформированная строка</returns>
+    std::string createString(int i);
+	std::string header(); //функция формирования шапки таблицы
+
     bool beforeShow() override;
     bool showUI() override;
     StateType handleNav() override;
-}
+};
 

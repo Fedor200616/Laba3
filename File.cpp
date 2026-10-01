@@ -22,14 +22,16 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
     int field_idx = 0;
 
     char sep_ch;
-    if (type == fileType::TXT)
-        LOG_INFO("Выбран файл ТХТ, знак раздела - |")
+    if (type == fileType::TXT) {
+        LOG_INFO("Выбран файл ТХТ, знак раздела - |");
         sep_ch = '|';
-    else if (type == fileType::CSV)
-        LOG_INFO("Выбран файл CSV, знак раздела - ,")
+    }
+    else if (type == fileType::CSV) {
+        LOG_INFO("Выбран файл CSV, знак раздела - ,");
         sep_ch = ',';
+    }
     else {
-        LOG_WARN("Ошибка выбора расширения, знак раздела - |")
+        LOG_WARN("Ошибка выбора расширения, знак раздела - |");
         sep_ch = '|';
     }
 

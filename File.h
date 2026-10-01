@@ -32,7 +32,7 @@ public:
 
     File(fs::path file){
         filePath = file;
-        LOG_INFO("ѕуть к файлу " + filePath)
+        LOG_INFO(std::string("ѕуть к файлу ") + filePath.string());
     }
     File() {}
 

@@ -49,7 +49,7 @@ public:
         if (!start_path.empty()) {
             current_state = StateType::EditorView;
             start_with_path = true;
-            LOG_INFO("Запуск с начальным путем: " + start_path);
+            LOG_INFO("Запуск с начальным путем: " + start_path.string());
         }
         else {
             start_with_path = false;
