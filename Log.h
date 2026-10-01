@@ -7,6 +7,11 @@
 
 namespace fs = std::filesystem;
 
+inline std::string pathToUtf8(const fs::path& p) {
+    std::u8string u8 = p.u8string(); // C++20: берём из внутреннего wstring, напрямую в UTF-8
+    return std::string(u8.begin(), u8.end());
+}
+
 //Синглтон, обьект один
 
 class Log {
@@ -55,6 +60,6 @@ public:
 };
 
 // --- УДОБНЫЕ МАКРОСЫ ДЛЯ ВЫЗОВА ИЗ ЛЮБОГО КЛАССА ---
-#define LOG_INFO(msg)  Log::getInstance().write("INFO ", msg)
-#define LOG_WARN(msg)  Log::getInstance().write("WARN ", msg)
+#define LOG_INFO(msg)  Log::getInstance().write("INFO", msg)
+#define LOG_WARN(msg)  Log::getInstance().write("WARN", msg)
 #define LOG_ERROR(msg) Log::getInstance().write("ERROR", msg)

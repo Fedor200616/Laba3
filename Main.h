@@ -49,7 +49,7 @@ private:
     bool initExePath(int argc, char* argv[]) {
         if (argc > 0 && argv && argv[0]) {
             exe_filepath = fs::absolute(argv[0]);
-            LOG_INFO("Путь к exe файлу: " + exe_filepath.string());
+            LOG_INFO("Путь к exe файлу: " + pathToUtf8(exe_filepath));
             return true;
         }
         return false;
@@ -61,7 +61,7 @@ public:
     Info(int argc, char* argv[]) {
         if (!initExePath(argc, argv)) {
             exe_filepath = fs::current_path();
-            LOG_ERROR("Ошибка нахождения пути к exe, выбран путь по умолчанию " + exe_filepath.string());
+            LOG_ERROR("Ошибка нахождения пути к exe, выбран путь по умолчанию " + pathToUtf8(exe_filepath));
         }
         config = AppConfig::parseArgs(argc, argv);
     }

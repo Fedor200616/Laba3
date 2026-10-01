@@ -10,7 +10,7 @@ Application::Application(int argc, char* argv[])
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
     );
-	std::string log_message = "Приложение запущено с аргументами: " + app_info.getConfig().arg_str;
+	std::string log_message = "Приложение запущено с аргументами: " + pathToUtf8(app_info.getConfig().arg_str);
 
     LOG_INFO(log_message);
 

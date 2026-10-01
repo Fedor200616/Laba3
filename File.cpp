@@ -60,9 +60,9 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
 
 std::vector<StudentInfo> File::loadFromFile() {
     std::vector<StudentInfo> result;
-	LOG_INFO("Открытие файла: " + filePath.string());
+	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
     if (filePath.empty() || !fs::exists(filePath)) {
-        LOG_ERROR("Файл не существует: " + filePath.string());
+        LOG_ERROR("Файл не существует: " + pathToUtf8(filePath));
         type = fileType::ERR;
         return result;
     }
