@@ -71,7 +71,7 @@ public:
     bool windowSize() const {
         // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
         std::cout << "\033[H";
-        
+        //system("cls");
         return true;
     }
 
@@ -144,38 +144,12 @@ protected:
     //StateType next_state;      
     
     MenuNav GetAction(input::key key_code) const;
-    
+    std::string showUI(); // Функция показа меню
+
     virtual bool beforeShow() = 0; //Функция действия перед показом меню
-    virtual bool showUI() = 0; // Функция показа меню
     virtual StateType handleNav() = 0; // Функция обработки действий пользователя
 
 };
-
-/*
-class MainMenu : public MenuLogic {
-private:
-
-public:
-    MainMenu(UI_Interface& filepath);
-
-    void beforeShow(MenuOut& menu) override;
-    void showUI(const MenuOut& menu) override;
-    void handleNav(MenuNav nav) override;
-};
-
-class ExplorerMenu : public MenuLogic {
-private:
-    
-
-public:
-    ExplorerMenu(UI_Interface& state);
-
-    void beforeShow(MenuOut& menu) override;
-    void showUI(const MenuOut& menu) override;
-    void handleNav(MenuNav nav) override;
-
-};
-*/
 
 class Editor : public MenuLogic {
 private:
@@ -198,7 +172,8 @@ private:
 	std::string header(); //функция формирования шапки таблицы
 
     bool beforeShow() override;
-    bool showUI() override;
     StateType handleNav() override;
+
+    const unsigned int MENU_SHOW_LENGTH = 20;
 };
 
