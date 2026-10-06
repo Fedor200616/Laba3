@@ -94,6 +94,7 @@ struct MenuStr {
     bool show = true;
     bool entered = true;
     std::function<std::string()> param = nullptr;
+    StateType step_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
 };
 
 struct Position{
