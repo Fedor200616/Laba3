@@ -6,7 +6,7 @@ enum class StateType {
     SaveDialog,
     ExitDialog,
 
-    EditorView, //Меню с данными студентов
+    Editor, //Меню с данными студентов
     EditorMenu, //Меню с изменением данных
 
     EXIT,

@@ -31,6 +31,7 @@ public:
     bool have_marker = false;
 
     File(fs::path file){
+        LOG_INFO("Запуск конструктора File");
         filePath = file;
         LOG_INFO(std::string("Путь к файлу ") + pathToUtf8(filePath));
     }

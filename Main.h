@@ -59,6 +59,7 @@ private:
 
 public:
     Info(int argc, char* argv[]) {
+        LOG_INFO("Запуск конструктора Info");
         if (!initExePath(argc, argv)) {
             exe_filepath = fs::current_path();
             LOG_ERROR("Ошибка нахождения пути к exe, выбран путь по умолчанию " + pathToUtf8(exe_filepath));

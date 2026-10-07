@@ -69,6 +69,37 @@ std::string MenuLogic::showUI() {
     return ss.str();
 }
 
+StateType MenuLogic::handleNav() {
+    input::key key = input::getKey();
+    MenuNav nav = GetAction(key);
+    bool cont = true;
+    switch (nav) {
+    case MenuNav::Up:
+        if (menu_out.act.row > 0) menu_out.act.row--;
+        break;
+    case MenuNav::Down:
+        if (menu_out.act.row + 1 < menu_out.total.row) menu_out.act.row++;
+        break;
+    case MenuNav::Left:
+        if (menu_out.act.col > 0) menu_out.act.col--;
+        break;
+    case MenuNav::Right:
+        if (menu_out.act.col + 1 < menu_out.total.col) menu_out.act.col++;
+        break;
+    case MenuNav::Back:
+        LOG_INFO("Пользователь нажал ESC. Выход из просмотрщика.");
+        return menu_out.before_state;
+    case MenuNav::Enter:
+        LOG_INFO("Пользователь нажал Enter. Переход к редактированию.");
+        return StateType::EditorMenu;
+    default:
+        break;
+    }
+    cont = menu_out.menu[menu_out.act.row].show;
+
+    return StateType::NONE;
+}
+
 static size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
 {
     size_t count = 0;
@@ -118,31 +149,68 @@ static void addCell(
     ss << "|";
 }
 
-Editor::Editor(UI_Interface& ui_inter, StudentDB& students) : ui(ui_inter), data(students) {
+Editor::Editor(StudentDB& students) : data(students) {
+    LOG_INFO("Запуск конструктора Editor");
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
     menu_out.act = { 0, 0 }; // Начальная активная позиция
 
-    size_t max_rows = menu_out.total.row > 0 ? menu_out.total.row : 1;
-    num_width = static_cast<int>(std::to_string(max_rows).length());
-    menu_width = num_width + data.NAME_WIDTH + data.GROUP_WIDTH + data.PASS_WIDTH + data.NUM_WIDTH + static_cast<int>(menu_out.total.col);
+    size_t max_rows = menu_out.total.row;
+    if (max_rows < 1) {
+		LOG_WARN("В файле данных о студентах нет записи");
+		max_rows = 1; // Чтобы не было деления на ноль и корректно отображалась шапка
+        //data.addEmpty(); // Добавляем пустую запись, чтобы корректно отображалась шапка
+	}
+    
 
-    menu_out.before_show = header();
-
-    // Выделяем память / меняем размер вектора под размер данных
-    menu_out.menu.resize(data.size());
-    for (size_t i = 0; i < data.size(); i++)
-    {
-        menu_out.menu[i].name = "";
-        menu_out.menu[i].param = [this, i]() {return createString(i);};; // Используем в параметре для изменения
-        menu_out.menu[i].show = false; //Показ самих пунктов будет определять функция showUI, в зависимости от того, попадает ли пункт в видимую область
-        menu_out.menu[i].entered = true; //Пусть всегда будет как заполнен, мб сделать пустые строки как false, ониж типо не заполнены?
-    }
     menu_out.ActMark = "";
     menu_out.InactMark = "";
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 };
+
+void Editor::updateMenu()
+{
+    menu_out.total.row = data.size();
+
+    size_t max_rows = data.size();
+	if (max_rows == 0) {
+		LOG_WARN("В файле данных о студентах нет записи");
+		//data.addEmpty(); // Добавляем пустую запись, чтобы корректно отображалась шапка
+        max_rows = 1;
+	}
+
+    num_width =
+        static_cast<int>(std::to_string(max_rows).length());
+
+    menu_width =
+        num_width +
+        data.NAME_WIDTH +
+        data.GROUP_WIDTH +
+        data.PASS_WIDTH +
+        data.NUM_WIDTH +
+        static_cast<int>(menu_out.total.col) +
+        12;
+
+    menu_out.before_show = header();
+
+    menu_out.menu.resize(data.size());
+
+    for (size_t i = 0; i < data.size(); ++i)
+    {
+        menu_out.menu[i].name = "";
+
+        menu_out.menu[i].param =
+            [this, i]() {
+            return createString(i);
+            };
+
+        menu_out.menu[i].show = false;
+        menu_out.menu[i].entered = true;
+
+		menu_out.menu[i].state_aft_ent = StateType::EditorMenu;
+    }
+}
 
 std::string Editor::createString(size_t row)
 {
@@ -230,37 +298,40 @@ std::string Editor::header()
 }
 
 bool Editor::beforeShow() {
-    ui.windowSize();
+    windowSize();
 
     if (data.empty()) { 
         LOG_ERROR("В файле данных о студентах нет записи"); 
         std::cout << "Нет данных для отображения.\n"; 
-        return ""; 
+        return false; 
     }
+
+    updateMenu();
 
     menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
     
     static size_t first_row = 0; // изначально задаем 0
 
-    if (menu_out.act.row <= 2) {
+    //делаем прокрутку через отображение некотороых пунктов
+	if (menu_out.act.row < MENU_NUM_TO_SHOW) { // Если вактивная стрелка в первых строках, то показываем с начала
         first_row = 0;
     }
-    else if (menu_out.act.row >= first_row + MENU_SHOW_LENGTH - 3) {
-        first_row = min(menu_out.act.row - MENU_SHOW_LENGTH + 3, menu_out.total.row - MENU_SHOW_LENGTH);
+	else if (menu_out.act.row >= first_row + MENU_SHOW_LENGTH - MENU_NUM_TO_SHOW) { // Если активная строка внизу, то прокручиваем вниз
+        first_row = min(menu_out.act.row - MENU_SHOW_LENGTH + MENU_NUM_TO_SHOW, menu_out.total.row - MENU_SHOW_LENGTH);
     }
-    else if (menu_out.act.row <= first_row + 3) {
-        first_row = max(menu_out.act.row - 3, 0);
+	else if (menu_out.act.row <= first_row + MENU_NUM_TO_SHOW) { 
+        first_row = max(menu_out.act.row - MENU_NUM_TO_SHOW, 0);
     }
 
     size_t last_row = min(first_row + MENU_SHOW_LENGTH, menu_out.total.row); // Либо последняя строка, либо посчитали
 
-    LOG_INFO(
+    /*LOG_INFO(
         "Активный - " + std::to_string(menu_out.act.row) + 
         ", " + std::to_string(menu_out.act.col) +
         " Первый - " + std::to_string(first_row) +
         " Последний - " + std::to_string(last_row) +
         " Всего - " + std::to_string(menu_out.total.row)
-    );
+    );*/
 
     for (size_t i = 0; i < menu_out.total.row; ++i) {
         menu_out.menu[i].show =
@@ -272,32 +343,3 @@ bool Editor::beforeShow() {
 
 
 
-StateType Editor::handleNav() {
-    input::key key = input::getKey();
-    MenuNav nav = GetAction(key);
-    bool cont = true;
-    //do {
-        switch (nav) {
-        case MenuNav::Up:
-            if (menu_out.act.row > 0) menu_out.act.row--;
-            break;
-        case MenuNav::Down:
-            if (menu_out.act.row + 1 < menu_out.total.row) menu_out.act.row++;
-            break;
-        case MenuNav::Left:
-            if (menu_out.act.col > 0) menu_out.act.col--;
-            break;
-        case MenuNav::Right:
-            if (menu_out.act.col + 1 < menu_out.total.col) menu_out.act.col++;
-            break;
-        case MenuNav::Back:
-            LOG_INFO("Пользователь нажал ESC. Выход из просмотрщика.");
-            return StateType::EXIT;
-        default:
-            break;
-        }
-        cont = menu_out.menu[menu_out.act.row].show;
-    //} while (!cont);
-
-    return StateType::NONE;
-}

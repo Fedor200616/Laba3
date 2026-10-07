@@ -53,6 +53,28 @@ public:
     std::string getNum(size_t i) const {
         return (i < info.size()) ? info[i].num : "";
     }
+	std::string getField(size_t i, Inf field) const {
+		if (i >= info.size()) return "";
+		switch (field) {
+		case Inf::num: return std::to_string(info[i].row);
+		case Inf::name: return info[i].name;
+		case Inf::group: return info[i].group;
+		case Inf::pass: return info[i].pass;
+		case Inf::digit: return info[i].num;
+		default: return "";
+		}
+	}
+    std::string getField(size_t row, size_t col) const {
+        Inf field;
+        switch (col) {
+        case 0: field = Inf::name; break;
+        case 1: field = Inf::group; break;
+        case 2: field = Inf::pass; break;
+		case 3: field = Inf::digit; break; 
+        default: field = Inf::num; break;
+        }
+        return getField(row, field);
+    }
 
     size_t size() const {
         return info.size();

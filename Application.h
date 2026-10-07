@@ -22,7 +22,7 @@ private:
 
     bool start_with_path = false;
 
-    UI_Interface ui;
+	Position act_pos; // Позиция активного элемента в меню Editor
 
 public:
     Application(int argc, char* argv[]);
@@ -31,4 +31,3 @@ public:
 
 };
 
-/*Плавность: Чтобы консоль не мерцала при постоянной перерисовке в фазе Show UI, очищайте экран не через system("cls"), а перемещая каретку в начало (0,0) через ANSI-последовательность \033[H или SetConsoleCursorPosition.*/

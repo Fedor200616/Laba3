@@ -59,42 +59,12 @@ namespace input {
 
 }
 
-class UI_Interface {
-private:
-    StateType& state;
-    Info& app_info;
-    
-    
-public:
-    UI_Interface(Info& inf, StateType& s) : app_info(inf), state(s){};
-
-    bool windowSize() const {
-        // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
-        std::cout << "\033[H";
-        //system("cls");
-        return true;
-    }
-
-    StateType getState(){
-        return state;
-    }
-    Info getInfo(){
-        return app_info;
-    }
-    void changeState(StateType new_state){
-        state = new_state;
-    }
-
-    void show(); //Функция отображения нужного пункта меню она не должна отвечать за смену логики
-
-};
-
 struct MenuStr {
     std::string name;
     bool show = true;
     bool entered = true;
     std::function<std::string()> param = nullptr;
-    StateType step_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
+    StateType state_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
 };
 
 struct Position{
@@ -103,6 +73,8 @@ struct Position{
 };
 
 struct MenuOut {
+	StateType before_state = StateType::EXIT;
+
     Position total;
     Position act;
 
@@ -145,22 +117,32 @@ protected:
     //StateType next_state;      
     
     MenuNav GetAction(input::key key_code) const;
-    std::string showUI(); // Функция показа меню
 
+    std::string showUI(); // Функция показа меню
+    StateType handleNav(); // Функция обработки действий пользователя
+    
     virtual bool beforeShow() = 0; //Функция действия перед показом меню
-    virtual StateType handleNav() = 0; // Функция обработки действий пользователя
+
+    bool windowSize() const {
+        // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
+        std::cout << "\033[H";
+        //system("cls");
+        return true;
+    }
 
 };
 
 class Editor : public MenuLogic {
 private:
-    UI_Interface& ui;
     StudentDB& data;
 
     int num_width = 0;
     int menu_width = 0;
 public:
-    Editor(UI_Interface& ui_inter, StudentDB& students);
+    Editor(StudentDB& students);
+	Position getActivePosition() const {
+		return menu_out.act;
+	}
 
 private: 
 
@@ -171,10 +153,11 @@ private:
     /// <returns>готовая сформированная строка</returns>
     std::string createString(size_t i);
 	std::string header(); //функция формирования шапки таблицы
+    void updateMenu();
 
     bool beforeShow() override;
-    StateType handleNav() override;
 
     const unsigned int MENU_SHOW_LENGTH = 20;
+	const int MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
 };
 
