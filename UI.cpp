@@ -36,7 +36,10 @@ StateType MenuLogic::menuShow()
 {
     StateType next_state = StateType::NONE;
     while (next_state == StateType::NONE){
-        beforeShow();
+		if (!beforeShow()) {
+			LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
+			return StateType::_ERROR;
+		}
         std::cout << showUI();
         next_state = handleNav();
     }

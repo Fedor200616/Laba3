@@ -101,5 +101,6 @@ std::vector<StudentInfo> File::loadFromFile() {
         i++;
 	}
     LOG_INFO("Файл обработан");
+	LOG_INFO("Количество записей: " + std::to_string(result.size()));
     return result;
 }

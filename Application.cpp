@@ -46,6 +46,13 @@ void Application::run() {
 			current_state = StateType::Editor;
 			break;
 
+        case StateType::_ERROR:
+			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
+			std::cout << "Произошла ошибка. Завершение работы программы.\n";
+			std::cout << "Нажмите любую клавишу для выхода...";
+			input::getAnyKey();
+			current_state = StateType::EXIT;
+			break;
         default:
 			LOG_ERROR("Неизвестное состояние: " + std::to_string(static_cast<int>(current_state)));
             std::cout << "Запустите программу с флагом -f <путь_к_файлу>\n";

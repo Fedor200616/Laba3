@@ -12,4 +12,6 @@ enum class StateType {
     EXIT,
 
     NONE,
+
+    _ERROR
 };
