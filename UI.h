@@ -63,7 +63,7 @@ namespace input {
 struct MenuStr {
     std::string name;
     bool show = true; // Отображать ли пунтк меню
-    bool to_enter = true; // может ли пользователь выбрать данный пункт меню
+    bool enter = true; // может ли пользователь выбрать данный пункт меню
     std::function<std::string()> param = nullptr;
     StateType state_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
 };
@@ -167,10 +167,7 @@ private:
     StudentDB& data;
     Position pos;
 
-    const std::string menu_str[] = "", // Тут будет лямбда с отображение строки меню и вохможностью двигаться влево вправо
-                                "",// 1 пункт - основной, отображается всегда, 0 и 2 только после Tab
-                                "", 
-                                "Изменить",
+    const std::string menu_str[] = "Изменить",
                                 "Заменить поля с данным именем",
                                 "Удалить строку",
                                 "Добавить строку сверху",
