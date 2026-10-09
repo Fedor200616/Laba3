@@ -48,6 +48,6 @@ std::string StudentDB::getField(size_t row, size_t col) const {
     return getField(row, field);
 }
 
-std::vector<StudentInfo> StudentDB::getInfoVec (){
+std::vector<StudentInfo> StudentDB::getInfoVec() const {
     return info;
 }

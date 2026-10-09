@@ -33,31 +33,31 @@ namespace input {
         Null = 0
     };
 
-    inline bool getAnyKey(){
-        while(_getch() == static_cast<int>(key::Extended)){}
-        return true;
-    }
+    bool getAnyKey();
 
-    inline key getKey(int ch = _getch()) {
+    key getKey(int ch = _getch());
 
-        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
-        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
-            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
-        }
+}
 
-        // Преобразуем код в enum
-        switch (ch) {
-        case static_cast<int>(key::Up):    return key::Up;
-        case static_cast<int>(key::Down):  return key::Down;
-        case static_cast<int>(key::Left):  return key::Left;
-        case static_cast<int>(key::Right): return key::Right;
-        case static_cast<int>(key::Enter): return key::Enter;
-        case static_cast<int>(key::Esc):   return key::Esc;
-        case static_cast<int>(key::Tab):   return key::Tab;
-        default:                           return key::Null;
-        }
-    }
+namespace UI {
+    size_t utf8Length(const std::string& str);
 
+    std::string padRight(const std::string& str, size_t width);
+
+    /// <summary>
+    /// Вывод на экран отдельной ячейки
+    /// </summary>
+    /// <param name="ss">поток ввода</param>
+    /// <param name="value">текст</param>
+    /// <param name="width">Ширина ячейки</param>
+    /// <param name="active">Активна ли ячейка</param>
+    void addCell(
+        std::ostringstream& ss,
+        const std::string& value,
+        size_t width,
+        bool active);
+
+    std::string header(int num_width, StudentDB& data);
 }
 
 struct MenuStr {
@@ -83,8 +83,8 @@ struct MenuOut {
     std::vector<MenuStr> menu;
     std::string post_show = "";
 
-    std::string ActMark = "->";
-    std::string InactMark = "  ";
+    std::string ActMark = "\033[30;47m->";
+    std::string InactMark = "\033[0m  ";
 
 };
 
@@ -122,7 +122,7 @@ protected:
     std::string showUI(); // Функция показа меню
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
-    virtual bool beforeShow() = 0; //Функция действия перед показом меню
+    virtual bool beforeShow(); //Функция действия перед показом меню
 
     bool windowSize() const {
         // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
@@ -153,7 +153,6 @@ private:
     /// <param name="i">номер строки</param>
     /// <returns>готовая сформированная строка</returns>
     std::string createString(size_t i);
-	std::string header(); //функция формирования шапки таблицы
     void updateMenu();
 
     bool beforeShow() override;
@@ -167,16 +166,18 @@ private:
     StudentDB& data;
     Position pos;
 
-    const std::string menu_str[] = "Изменить",
-                                "Заменить поля с данным именем",
-                                "Удалить строку",
-                                "Добавить строку сверху",
-                                "Добавить строку снизу"; // Возможно тут добавить возможность отмены и сохранения изменений
+    const std::vector<std::string> menu_str = { 
+        "Изменить",
+        "Заменить поля с данным именем",
+        "Удалить строку",
+        "Добавить строку сверху",
+        "Добавить строку снизу" 
+    }; // Возможно тут добавить возможность отмены и сохранения изменений
     std::vector<StudentInfo> temp_info;
-    bool is_mod = False;
+    bool is_mod;
+	bool beforeShow() override;
 
+    std::string header() const;
 public:
-    ~EditMenu();
     EditMenu(StudentDB& base, Position act);
-    bool beforeShow() override;
-}
+};
