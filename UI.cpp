@@ -367,7 +367,9 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     menu_out.total.col = 0;
     menu_out.act = {0, 0};
 
-    
+    menu_out.post_show = "\n" +
+                        "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n" +
+                        "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра"
 
 }
 
