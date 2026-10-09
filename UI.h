@@ -180,6 +180,6 @@ private:
 
 public:
     ~EditMenu();
-    EditMenu(StudentDB& students, Position act);
+    EditMenu(StudentDB& base, Position act);
 
 }
