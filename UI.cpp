@@ -94,7 +94,7 @@ StateType MenuLogic::handleNav() {
         return menu_out.before_state;
     case MenuNav::Enter:
         LOG_INFO("Пользователь нажал Enter. Переход к редактированию.");
-        return StateType::EditorMenu;
+        return menu_out.menu[menu_out.act.row].state_aft_ent;
     default:
         break;
     }
@@ -344,5 +344,12 @@ bool Editor::beforeShow() {
     return true;
 }
 
+EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
+    LOG_INFO("Запуск конструктора EditMenu");
+    temp_data = data;
+    is_mod = false;
 
+    
+
+}
 

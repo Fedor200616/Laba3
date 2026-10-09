@@ -40,6 +40,7 @@ public:
 
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
+    std::vector<StudentInfo> getInfoVec() const;
 
     // Простые однострочные геттеры можно оставить inline прямо здесь (по желанию):
     size_t size() const { return info.size(); }
