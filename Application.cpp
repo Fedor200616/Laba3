@@ -32,7 +32,7 @@ void Application::run() {
     std::cout << "\033[2J\033[H";
 	
     while (current_state != StateType::EXIT) {
-
+		system("cls"); // Очистка экрана для Windows
         switch (current_state) {
         case StateType::Editor:{ 
             Editor editor(students_info);
@@ -40,12 +40,13 @@ void Application::run() {
             act_pos = editor.getActivePosition();
             break;
         }
-		case StateType::EditorMenu:
-			LOG_WARN("Данный функционал еще не реализован. Возврат в меню редактирования.");
-			LOG_INFO("Выбрано поле для редактирования: строка " + std::to_string(act_pos.row) + ", колонка " + std::to_string(act_pos.col) + ", название " + students_info.getField(act_pos.row, act_pos.col));
-			current_state = StateType::Editor;
-			break;
-
+        case StateType::EditorMenu: {
+            //LOG_WARN("Данный функционал еще не реализован. Возврат в меню редактирования.");
+            LOG_INFO("Выбрано поле для редактирования: строка " + std::to_string(act_pos.row) + ", колонка " + std::to_string(act_pos.col) + ", название " + students_info.getField(act_pos.row, act_pos.col));
+            EditMenu edit_menu(students_info, act_pos);
+            current_state = edit_menu.menuShow();
+            break;
+        }
         case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";

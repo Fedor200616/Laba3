@@ -1,6 +1,121 @@
 #include "UI.h"
 #include "Student.h"
 
+namespace input {
+    bool getAnyKey() {
+        while (_getch() == static_cast<int>(key::Extended)) {}
+        return true;
+    }
+
+    key getKey(int ch) {
+
+        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
+        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
+            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
+        }
+
+        // Преобразуем код в enum
+        switch (ch) {
+        case static_cast<int>(key::Up):    return key::Up;
+        case static_cast<int>(key::Down):  return key::Down;
+        case static_cast<int>(key::Left):  return key::Left;
+        case static_cast<int>(key::Right): return key::Right;
+        case static_cast<int>(key::Enter): return key::Enter;
+        case static_cast<int>(key::Esc):   return key::Esc;
+        case static_cast<int>(key::Tab):   return key::Tab;
+        default:                           return key::Null;
+        }
+    }
+}
+
+namespace UI {
+    size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
+    {
+        size_t count = 0;
+
+        for (unsigned char c : str)
+        {
+            if ((c & 0xC0) != 0x80) // Если старшие два бита не равны 10, значит это начало нового символа
+                ++count;
+        }
+
+        return count;
+    }
+
+    std::string padRight(const std::string& str, size_t width) // Функция для выравнивания строки по ширине, учитывая UTF-8 символы
+    {
+        size_t length = utf8Length(str);
+
+        if (length >= width)
+            return str;
+
+        return str + std::string(width - length, ' ');
+    }
+
+    /// <summary>
+    /// Вывод на экран отдельной ячейки
+    /// </summary>
+    /// <param name="ss">поток ввода</param>
+    /// <param name="value">текст</param>
+    /// <param name="width">Ширина ячейки</param>
+    /// <param name="active">Активна ли ячейка</param>
+    void addCell(
+        std::ostringstream& ss,
+        const std::string& value,
+        size_t width,
+        bool active)
+    {
+        if (active)
+            ss << "\033[30;47m";
+
+        ss << " "
+            << padRight(value, width)
+            << " ";
+
+        if (active)
+            ss << "\033[0m";
+
+        ss << "|";
+    }
+
+    std::string header(int num_width, StudentDB& data)
+    {
+        std::ostringstream ss;
+        ss << " "; // Без этого шапка сьезжает на 1 символ влево
+        addCell(
+            ss,
+            "#",
+            num_width,
+            false
+        );
+        addCell(
+            ss,
+            "Имя",
+            data.NAME_WIDTH,
+            false
+        );
+        addCell(
+            ss,
+            "Группа",
+            data.GROUP_WIDTH,
+            false
+        );
+        addCell(
+            ss,
+            "Пароль",
+            data.PASS_WIDTH,
+            false
+        );
+        addCell(
+            ss,
+            "Номер",
+            data.NUM_WIDTH,
+            false
+        );
+        ss << '\n';
+        return ss.str();
+    }
+}
 
 MenuNav MenuLogic::GetAction(input::key key_code) const
 {
@@ -32,6 +147,11 @@ MenuNav MenuLogic::GetAction(input::key key_code) const
     }
 }
 
+bool MenuLogic::beforeShow() {
+    windowSize();
+    return true;
+}
+
 StateType MenuLogic::menuShow()
 {
     StateType next_state = StateType::NONE;
@@ -40,7 +160,7 @@ StateType MenuLogic::menuShow()
 			LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
 			return StateType::_ERROR;
 		}
-        std::cout << showUI();
+        std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
     return next_state;
@@ -52,57 +172,61 @@ std::string MenuLogic::showUI() {
     static int first_row = 0;
 
     std::ostringstream ss;
+	ss << "\033[0m"; // Сброс цвета и стиля
     ss << menu_out.before_show; //Отображение шапки
 
-    for (int i = 0; i < menu_out.total.row; i++) {
-        if (menu_out.act.row == i) {
-            ss << menu_out.ActMark;
-        }
-        else {
-            ss << menu_out.InactMark;
-        }
+    for (size_t i = 0; i < menu_out.total.row; i++) {
+        ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
-            ss << menu_out.menu[i].name << ' '
-                << menu_out.menu[i].param();
+            ss << menu_out.menu[i].name;
+            if (menu_out.menu[i].param) ss << ' ' << menu_out.menu[i].param();
+            else ss << "\033[K\n";
         }
     }
+    ss << "\033[0m";
     ss << menu_out.post_show;
 
 
     return ss.str();
 }
 
+
 StateType MenuLogic::handleNav() {
     input::key key = input::getKey();
     MenuNav nav = GetAction(key);
     bool cont = true;
-
+	size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
+    int itter = 0;
     switch (nav) {
     case MenuNav::Up:
         do {
             if (menu_out.act.row > 0) {
                 menu_out.act.row--;
             }
-            else {
-                menu_out.act.row = menu_out.total.row - 1;
-            }
+            itter++;
+			if (itter > menu_out.total.row) {
+				LOG_ERROR("Ошибка в навигации по меню.");
+                menu_out.act.row = act_row;
+			}
         } while (
             !menu_out.menu[menu_out.act.row].show ||
             !menu_out.menu[menu_out.act.row].enter
-        );
+            );
         break;
     case MenuNav::Down:
         do {
             if (menu_out.act.row + 1 < menu_out.total.row) {
                 menu_out.act.row++;
             }
-            else {
-                menu_out.act.row = 0;
+            itter++;
+            if (itter > menu_out.total.row) {
+                LOG_ERROR("Ошибка в навигации по меню.");
+                menu_out.act.row = act_row;
             }
         } while (
             !menu_out.menu[menu_out.act.row].show ||
             !menu_out.menu[menu_out.act.row].enter
-        );
+            );
         break;
     case MenuNav::Left:
         if (menu_out.act.col > 0) menu_out.act.col--;
@@ -124,54 +248,7 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
-static size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
-{
-    size_t count = 0;
 
-    for (unsigned char c : str)
-    {
-		if ((c & 0xC0) != 0x80) // Если старшие два бита не равны 10, значит это начало нового символа
-            ++count;
-    }
-
-    return count;
-}
-
-static std::string padRight(const std::string& str, size_t width) // Функция для выравнивания строки по ширине, учитывая UTF-8 символы
-{
-    size_t length = utf8Length(str);
-
-    if (length >= width)
-        return str;
-
-    return str + std::string(width - length, ' ');
-}
-
-/// <summary>
-/// Вывод на экран отдельной ячейки
-/// </summary>
-/// <param name="ss">поток ввода</param>
-/// <param name="value">текст</param>
-/// <param name="width">Ширина ячейки</param>
-/// <param name="active">Активна ли ячейка</param>
-static void addCell(
-    std::ostringstream& ss,
-    const std::string& value,
-    size_t width,
-    bool active)
-{
-    if (active)
-        ss << "\033[30;47m";
-
-    ss << " "
-        << padRight(value, width)
-        << " ";
-
-    if (active)
-        ss << "\033[0m";
-
-    ss << "|";
-}
 
 Editor::Editor(StudentDB& students) : data(students) {
     LOG_INFO("Запуск конструктора Editor");
@@ -189,8 +266,7 @@ Editor::Editor(StudentDB& students) : data(students) {
 
     menu_out.ActMark = "";
     menu_out.InactMark = "";
-    menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
-        "Используйте стрелочки для навигации, ESC для выхода...\n";
+    
 };
 
 void Editor::updateMenu()
@@ -216,7 +292,9 @@ void Editor::updateMenu()
         static_cast<int>(menu_out.total.col) +
         12; // нужно для ровного отображения получено эксп. путем
 
-    menu_out.before_show = header();
+    menu_out.before_show = UI::header(num_width, data);
+    menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
+        "Используйте стрелочки для навигации, ESC для выхода...\n";
 
     menu_out.menu.resize(data.size());
 
@@ -230,10 +308,11 @@ void Editor::updateMenu()
             };
 
         menu_out.menu[i].show = false;
-        menu_out.menu[i].entered = true;
+        menu_out.menu[i].enter = true;
 
 		menu_out.menu[i].state_aft_ent = StateType::EditorMenu;
     }
+
 }
 
 std::string Editor::createString(size_t row)
@@ -242,82 +321,43 @@ std::string Editor::createString(size_t row)
 
     bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
 
-    addCell(
+    UI::addCell(
         ss,
         std::to_string(data.getRow(row)),
         num_width,
         false
     );
 
-    addCell(
+    UI::addCell(
         ss,
         data.getName(row),
         data.NAME_WIDTH,
         active_row && menu_out.act.col == 0
     );
 
-    addCell(
+    UI::addCell(
         ss,
         data.getGroup(row),
         data.GROUP_WIDTH,
         active_row && menu_out.act.col == 1
     );
 
-    addCell(
+    UI::addCell(
         ss,
         data.getPass(row),
         data.PASS_WIDTH,
         active_row && menu_out.act.col == 2
     );
 
-    addCell(
+    UI::addCell(
         ss,
         data.getNum(row),
         data.NUM_WIDTH,
         active_row && menu_out.act.col == 3
     );
 
-    ss << '\n';
+    ss << "\033[K\n";   // вместо ss << '\n'
 
-    return ss.str();
-}
-
-std::string Editor::header()
-{
-    std::ostringstream ss;
-    size_t max_rows = menu_out.total.row > 0 ? menu_out.total.row : 1;
-    ss << " "; // Без этого шапка сьезжает на 1 символ влево
-    addCell(
-        ss,
-        "#",
-        num_width,
-        false
-    );
-    addCell(
-        ss,
-        "Имя",
-        data.NAME_WIDTH,
-        false
-    );
-    addCell(
-        ss,
-        "Группа",
-        data.GROUP_WIDTH,
-        false
-    );
-    addCell(
-        ss,
-        "Пароль",
-        data.PASS_WIDTH,
-        false
-    );
-    addCell(
-        ss,
-        "Номер",
-        data.NUM_WIDTH,
-        false
-    );
-    ss << '\n';
     return ss.str();
 }
 
@@ -331,6 +371,8 @@ bool Editor::beforeShow() {
     }
 
     updateMenu();
+
+    
 
     menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
     
@@ -353,23 +395,79 @@ bool Editor::beforeShow() {
         menu_out.menu[i].show =
             i >= first_row && i < last_row; // выбираем показывать или нет строку
     }
-
     return true;
+}
+
+std::string EditMenu::header() const {
+    std::ostringstream ss;
+	int num_width = static_cast<int>(std::to_string(data.size()).length());
+    ss << UI::header(num_width, data);
+    ss << ' ';
+    UI::addCell(
+        ss,
+        std::to_string(data.getRow(pos.row)),
+        num_width,
+        false
+    );
+
+    UI::addCell(
+        ss,
+        data.getName(pos.row),
+        data.NAME_WIDTH,
+        pos.col == 0
+    );
+
+    UI::addCell(
+        ss,
+        data.getGroup(pos.row),
+        data.GROUP_WIDTH,
+        pos.col == 1
+    );
+
+    UI::addCell(
+        ss,
+        data.getPass(pos.row),
+        data.PASS_WIDTH,
+        pos.col == 2
+    );
+
+    UI::addCell(
+        ss,
+        data.getNum(pos.row),
+        data.NUM_WIDTH,
+        pos.col == 3
+    );
+    ss << '\n';
+
+	return ss.str();
 }
 
 EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     LOG_INFO("Запуск конструктора EditMenu");
-    temp_data = data;
+    temp_info = data.getInfoVec();
     is_mod = false;
 
     //создаем образ меню
     menu_out.total.row = menu_str.size();
     menu_out.total.col = 0;
-    menu_out.act = {0, 0};
+    menu_out.act = { 0, 0 };
+    menu_out.before_state = StateType::Editor;
+    menu_out.menu.resize(menu_str.size());
+    for (size_t i = 0; i < menu_str.size(); ++i) {
+        menu_out.menu[i].name = menu_str[i];
+        menu_out.menu[i].show = true;
+        menu_out.menu[i].enter = true;
+        menu_out.menu[i].state_aft_ent = StateType::EditorMenu; // После выбора пункта меню остаемся в этом же меню
+    }
 
-    menu_out.post_show = "\n" +
-                        "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n" +
-                        "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра"
+    menu_out.post_show = "\n"
+        "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
+        "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
+}
 
+bool EditMenu::beforeShow() {
+	windowSize();
+	menu_out.before_show = header();
+	return true;
 }
 
