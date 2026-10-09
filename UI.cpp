@@ -402,80 +402,65 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     LOG_INFO("Запуск конструктора EditMenu");
     temp_info = data.getInfoVec();
     is_mod = false;
-    int num_width = static_cast<int>(std::to_string(data.size()).length());
+    num_width = static_cast<int>(std::to_string(data.size()).length());
     //создаем образ меню
     menu_out.total.row = menu_str.size();
-    menu_out.total.col = 0;
-    menu_out.act = { MENU_VIEW, 0 };
+    menu_out.total.col = data.INFO_COL_COUNT;
+    menu_out.act = { 1, pos.col };
     menu_out.before_state = StateType::Editor;
     menu_out.menu.resize(menu_str.size());
-    for (size_t i = 0; i < menu_str.size(); ++i) {
+    for (size_t i = 1; i < menu_str.size(); ++i) {
         menu_out.menu[i].name = menu_str[i];
         menu_out.menu[i].show = true;
         menu_out.menu[i].enter = true;
         menu_out.menu[i].state_aft_ent = StateType::EditorMenu; // После выбора пункта меню остаемся в этом же меню
     }
-    size_t act_row = 2;
-    for (size_t i = 0; i < MENU_VIEW; i++) {
-        size_t first_row = pos.row - 1;
-        if (first_row < 0) {
-			menu_out.menu[first_row].param = []() { return ""; };
-			menu_out.menu[first_row].show = false;
-        }
-        else if (first_row + MENU_VIEW > data.size()) {
-            menu_out.menu[first_row + MENU_VIEW].param = []() { return ""; };
-            menu_out.menu[first_row + MENU_VIEW].show = false;
-        }
-		menu_out.menu[i].param = [this, i, first_row]() {
-			return createString(first_row + i);
-			};
-		menu_out.menu[i].enter = false;
-    }
+	menu_out.menu[0].param = [this]() { return createString(); };
+	menu_out.menu[0].enter = false; // Первый пункт меню не выбирается, он просто отображает текущую строку
+
 
     menu_out.post_show = "\n"
         "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
         "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
 }
 
-std::string EditMenu::createString(size_t row)
+std::string EditMenu::createString()
 {
     std::ostringstream ss;
 
-    bool active_row = (pos.row == row); //проверка, активна ли строка
-
     UI::addCell(
         ss,
-        std::to_string(data.getRow(row)),
+        std::to_string(data.getRow(pos.row)),
         num_width,
         false
     );
 
     UI::addCell(
         ss,
-        data.getName(row),
+        data.getName(pos.row),
         data.NAME_WIDTH,
-        active_row && pos.col == 0
+        pos.col == 0
     );
 
     UI::addCell(
         ss,
-        data.getGroup(row),
+        data.getGroup(pos.row),
         data.GROUP_WIDTH,
-        active_row && pos.col == 1
+        pos.col == 1
     );
 
     UI::addCell(
         ss,
-        data.getPass(row),
+        data.getPass(pos.row),
         data.PASS_WIDTH,
-        active_row && pos.col == 2
+        pos.col == 2
     );
 
     UI::addCell(
         ss,
-        data.getNum(row),
+        data.getNum(pos.row),
         data.NUM_WIDTH,
-        active_row && pos.col == 3
+        pos.col == 3
     );
 
     ss << "\033[K\n";   // вместо ss << '\n'
