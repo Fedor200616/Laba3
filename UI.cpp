@@ -76,12 +76,33 @@ StateType MenuLogic::handleNav() {
     input::key key = input::getKey();
     MenuNav nav = GetAction(key);
     bool cont = true;
+
     switch (nav) {
     case MenuNav::Up:
-        if (menu_out.act.row > 0) menu_out.act.row--;
+        do {
+            if (menu_out.act.row > 0) {
+                menu_out.act.row--;
+            }
+            else {
+                menu_out.act.row = menu_out.total.row - 1;
+            }
+        } while (
+            !menu_out.menu[menu_out.act.row].show ||
+            !menu_out.menu[menu_out.act.row].enter
+        );
         break;
     case MenuNav::Down:
-        if (menu_out.act.row + 1 < menu_out.total.row) menu_out.act.row++;
+        do {
+            if (menu_out.act.row + 1 < menu_out.total.row) {
+                menu_out.act.row++;
+            }
+            else {
+                menu_out.act.row = 0;
+            }
+        } while (
+            !menu_out.menu[menu_out.act.row].show ||
+            !menu_out.menu[menu_out.act.row].enter
+        );
         break;
     case MenuNav::Left:
         if (menu_out.act.col > 0) menu_out.act.col--;
@@ -193,7 +214,7 @@ void Editor::updateMenu()
         data.PASS_WIDTH +
         data.NUM_WIDTH +
         static_cast<int>(menu_out.total.col) +
-        12;
+        12; // нужно для ровного отображения получено эксп. путем
 
     menu_out.before_show = header();
 
@@ -316,7 +337,7 @@ bool Editor::beforeShow() {
     static size_t first_row = 0; // изначально задаем 0
 
     //делаем прокрутку через отображение некотороых пунктов
-	if (menu_out.act.row < MENU_NUM_TO_SHOW) { // Если вактивная стрелка в первых строках, то показываем с начала
+	if (menu_out.act.row < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
         first_row = 0;
     }
 	else if (menu_out.act.row >= first_row + MENU_SHOW_LENGTH - MENU_NUM_TO_SHOW) { // Если активная строка внизу, то прокручиваем вниз
@@ -327,14 +348,6 @@ bool Editor::beforeShow() {
     }
 
     size_t last_row = min(first_row + MENU_SHOW_LENGTH, menu_out.total.row); // Либо последняя строка, либо посчитали
-
-    /*LOG_INFO(
-        "Активный - " + std::to_string(menu_out.act.row) + 
-        ", " + std::to_string(menu_out.act.col) +
-        " Первый - " + std::to_string(first_row) +
-        " Последний - " + std::to_string(last_row) +
-        " Всего - " + std::to_string(menu_out.total.row)
-    );*/
 
     for (size_t i = 0; i < menu_out.total.row; ++i) {
         menu_out.menu[i].show =
@@ -348,6 +361,11 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     LOG_INFO("Запуск конструктора EditMenu");
     temp_data = data;
     is_mod = false;
+
+    //создаем образ меню
+    menu_out.total.row = menu_str.size();
+    menu_out.total.col = 0;
+    menu_out.act = {0, 0};
 
     
 
