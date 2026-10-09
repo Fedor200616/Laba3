@@ -164,9 +164,12 @@ private:
 class EditMenu : public MenuLogic {
 private:
     StudentDB& data;
-    Position pos;
+	Position pos; //позиция активного поля в меню Editor, которое мы редактируем
 
     const std::vector<std::string> menu_str = { 
+        "",
+        "",
+        "",
         "Изменить",
         "Заменить поля с данным именем",
         "Удалить строку",
@@ -177,7 +180,9 @@ private:
     bool is_mod;
 	bool beforeShow() override;
 
-    std::string header() const;
+    std::string createString(size_t i);
+	int num_width = 0;
+	const size_t MENU_VIEW = 3; // количество полей перед меню в которых отображается информация о студенте
 public:
     EditMenu(StudentDB& base, Position act);
 };
