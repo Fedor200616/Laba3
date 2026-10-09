@@ -120,7 +120,7 @@ protected:
     MenuNav GetAction(input::key key_code) const;
 
     std::string showUI(); // Функция показа меню
-    StateType handleNav(); // Функция обработки действий пользователя
+    virtual StateType handleNav(); // Функция обработки действий пользователя
     
     virtual bool beforeShow() = 0; //Функция действия перед показом меню
 
@@ -168,6 +168,8 @@ private:
     Position pos;
 
     const std::string menu_str[] = "", // Тут будет лямбда с отображение строки меню и вохможностью двигаться влево вправо
+                                "",// 1 пункт - основной, отображается всегда, 0 и 2 только после Tab
+                                "", 
                                 "Изменить",
                                 "Заменить поля с данным именем",
                                 "Удалить строку",
@@ -175,11 +177,11 @@ private:
                                 "Добавить строку снизу",
                                 "Отменить изменения",
                                 "Сохранить изменения"
-    StudentDB temp_data;
+    std::vector<StudentInfo> temp_info;
     bool is_mod = False;
 
 public:
     ~EditMenu();
     EditMenu(StudentDB& base, Position act);
-
+    bool beforeShow() override;
 }
