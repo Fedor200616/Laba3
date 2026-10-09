@@ -21,6 +21,8 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
 
     int field_idx = 0;
 
+    //Сделать через find() поиск , и | иначе ошибка
+
     char sep_ch = (type == fileType::CSV) ? ',' : '|'; // требует доработок, т.к. тхт тоже может быть с запятыми
 
     while (std::getline(iss, field, sep_ch)) {
