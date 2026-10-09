@@ -62,8 +62,8 @@ namespace input {
 
 struct MenuStr {
     std::string name;
-    bool show = true;
-    bool entered = true;
+    bool show = true; // Отображать ли пунтк меню
+    bool to_enter = true; // может ли пользователь выбрать данный пункт меню
     std::function<std::string()> param = nullptr;
     StateType state_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
 };
