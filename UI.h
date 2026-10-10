@@ -86,6 +86,7 @@ struct MenuOut {
     std::string ActMark = "\033[30;47m";
     std::string InactMark = "\033[0m";
 
+    bool tab_ent = 0;
 };
 
 enum class MenuNav {
@@ -119,10 +120,10 @@ protected:
     
     MenuNav GetAction(input::key key_code) const;
 
+    virtual bool beforeShow(); //Функция действия перед показом меню
     std::string showUI(); // Функция показа меню
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
-    virtual bool beforeShow(); //Функция действия перед показом меню
 
     bool windowSize() const {
         // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
@@ -171,14 +172,18 @@ private:
         "Заменить поля с данным именем",
         "Удалить строку",
         "Добавить строку сверху",
-        "Добавить строку снизу" 
+        "Добавить строку снизу",
+        "Отменить изменения"
     }; // Возможно тут добавить возможность отмены и сохранения изменений
     std::vector<StudentInfo> temp_info;
     bool is_mod;
+
 	bool beforeShow() override;
+    StateType handleNav() override;
 
     std::string createString();
 	int num_width = 0;
+    
 public:
     EditMenu(StudentDB& base, Position act);
 }; //Кароче перегрузим HandleNav, и в одном режиме мы выбираем базовый, а в другом пишем свой, и все чикибумбони
