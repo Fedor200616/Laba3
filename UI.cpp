@@ -240,6 +240,10 @@ StateType MenuLogic::handleNav() {
     case MenuNav::Enter:
         LOG_INFO("Пользователь нажал Enter. Переход к редактированию.");
         return menu_out.menu[menu_out.act.row].state_aft_ent;
+    case MenuNav::KeyTab:
+        LOG_INFO("Нажатие Таба");
+        tab_ent = !tab_ent;
+        break;
     default:
         break;
     }
@@ -418,7 +422,7 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
 	menu_out.menu[0].param = [this]() { return createString(); };
 	menu_out.menu[0].enter = false; // Первый пункт меню не выбирается, он просто отображает текущую строку
 
-
+    menu_out.before_show = UI::header(num_width, data);
     menu_out.post_show = "\n"
         "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
         "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
@@ -468,9 +472,11 @@ std::string EditMenu::createString()
     return ss.str();
 }
 
-bool EditMenu::beforeShow() {
-	windowSize();
-	menu_out.before_show = UI::header(num_width, data);
-	return true;
+StateType EditMenu::handleNav() {
+    if (!menu_out.tab_ent){
+        return MenuLogic::handleNav();
+    }
+    else{
+        
+    }
 }
-
