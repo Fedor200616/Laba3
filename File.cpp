@@ -64,7 +64,7 @@ std::vector<StudentInfo> File::loadFromFile() {
     std::vector<StudentInfo> result;
 	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
     if (filePath.empty() || !fs::exists(filePath)) {
-        LOG_ERROR("Файл не существует: " + pathToUtf8(filePath));
+        LOG_ERROR("Файл не существует или не найден: " + pathToUtf8(filePath));
         type = fileType::ERR;
         return result;
     }
