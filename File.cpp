@@ -14,7 +14,7 @@ namespace {
 
 
 
-StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
+StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i, char sep_ch) {
     StudentInfo res = { i, "", "", "", "" };
     std::istringstream iss(str_buf);
     std::string field;
@@ -22,8 +22,6 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i) {
     int field_idx = 0;
 
     //Сделать через find() поиск , и | иначе ошибка
-
-    char sep_ch = (type == fileType::CSV) ? ',' : '|'; // требует доработок, т.к. тхт тоже может быть с запятыми
 
     while (std::getline(iss, field, sep_ch)) {
         std::string clean_field = trim(field);
@@ -81,27 +79,47 @@ std::vector<StudentInfo> File::loadFromFile() {
 	}
 
 	unsigned int i = 0;
-	while (std::getline(ifile, str_buf)) {
-        if (trim(str_buf).empty()) continue;
-		StudentInfo res_buf = copyFromString(str_buf, i);
-        if (i == 0) {
-            bool is_norm = (res_buf.name == "Имя" &&
+char separator = '|';
+
+while (std::getline(ifile, str_buf)) {
+    if (trim(str_buf).empty())
+        continue;
+
+    StudentInfo res_buf = copyFromString(str_buf, i, separator);
+
+    if (i == 0) {
+        bool is_norm =
+            res_buf.name == "Имя" &&
+            res_buf.group == "Группа" &&
+            res_buf.num == "Номер" &&
+            res_buf.pass == "Пароль";
+
+        // Если с | заголовок не распознан, пробуем запятую
+        if (!is_norm) {
+            separator = ',';
+            res_buf = copyFromString(str_buf, i, separator);
+
+            is_norm =
+                res_buf.name == "Имя" &&
                 res_buf.group == "Группа" &&
                 res_buf.num == "Номер" &&
-                res_buf.pass == "Пароль");
-            if (!is_norm) {
-                LOG_ERROR("Ошибка в шапке файла");
-                type = fileType::ERR;
-                return {};
-            }
-            i++;
-            continue;
+                res_buf.pass == "Пароль";
         }
 
-        res_buf.row = i;
-        result.push_back(res_buf);
-        i++;
-	}
+        if (!is_norm) {
+            LOG_ERROR("Ошибка в шапке файла");
+            type = fileType::ERR;
+            return {};
+        }
+
+        ++i;
+        continue;
+    }
+
+    res_buf.row = i;
+    result.push_back(res_buf);
+    ++i;
+}
     LOG_INFO("Файл обработан");
 	LOG_INFO("Количество записей: " + std::to_string(result.size()));
     return result;

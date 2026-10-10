@@ -26,7 +26,7 @@ private:
     fileType type = fileType::NONE; // тип файла
     bool is_modified = false; // Был ли модифицирован файл
 
-    StudentInfo copyFromString(const std::string& str_buf, unsigned int i);
+    StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
 public:
     bool have_marker = false;
 
