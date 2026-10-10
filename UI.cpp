@@ -82,36 +82,14 @@ namespace UI {
     {
         std::ostringstream ss;
         ss << " "; // Без этого шапка сьезжает на 1 символ влево
-        addCell(
-            ss,
-            "#",
-            num_width,
-            false
-        );
-        addCell(
-            ss,
-            "Имя",
-            data.NAME_WIDTH,
-            false
-        );
-        addCell(
-            ss,
-            "Группа",
-            data.GROUP_WIDTH,
-            false
-        );
-        addCell(
-            ss,
-            "Пароль",
-            data.PASS_WIDTH,
-            false
-        );
-        addCell(
-            ss,
-            "Номер",
-            data.NUM_WIDTH,
-            false
-        );
+        for(int i = 0; i < data.INFO_COL_COUNT; i++){
+            addCell(
+                ss,
+                data.HEADER[i],
+                data.WIDTH_VEC[i],
+                false
+            )
+        }
         ss << '\n';
         return ss.str();
     }
@@ -266,23 +244,6 @@ Editor::Editor(StudentDB& students) : data(students) {
 		max_rows = 1; // Чтобы не было деления на ноль и корректно отображалась шапка
         //data.addEmpty(); // Добавляем пустую запись, чтобы корректно отображалась шапка
 	}
-    
-
-    menu_out.ActMark = "";
-    menu_out.InactMark = "";
-    
-};
-
-void Editor::updateMenu()
-{
-    menu_out.total.row = data.size();
-
-    size_t max_rows = data.size();
-	if (max_rows == 0) {
-		LOG_WARN("В файле данных о студентах нет записи");
-		//data.addEmpty(); // Добавляем пустую запись, чтобы корректно отображалась шапка
-        max_rows = 1;
-	}
 
     num_width =
         static_cast<int>(std::to_string(max_rows).length());
@@ -317,7 +278,10 @@ void Editor::updateMenu()
 		menu_out.menu[i].state_aft_ent = StateType::EditorMenu;
     }
 
-}
+    menu_out.ActMark = "";
+    menu_out.InactMark = "";
+    
+};
 
 std::string Editor::createString(size_t row)
 {
@@ -325,41 +289,15 @@ std::string Editor::createString(size_t row)
 
     bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
 
-    UI::addCell(
-        ss,
-        std::to_string(data.getRow(row)),
-        num_width,
-        false
-    );
-
-    UI::addCell(
-        ss,
-        data.getName(row),
-        data.NAME_WIDTH,
-        active_row && menu_out.act.col == 0
-    );
-
-    UI::addCell(
-        ss,
-        data.getGroup(row),
-        data.GROUP_WIDTH,
-        active_row && menu_out.act.col == 1
-    );
-
-    UI::addCell(
-        ss,
-        data.getPass(row),
-        data.PASS_WIDTH,
-        active_row && menu_out.act.col == 2
-    );
-
-    UI::addCell(
-        ss,
-        data.getNum(row),
-        data.NUM_WIDTH,
-        active_row && menu_out.act.col == 3
-    );
-
+    for(int i = 0; i < INFO_COL_COUNT; i++){
+        bool act = active_row && i = menu_out.act.col + 1; //-1 т.к. нельзя выбирать номер строки
+        UI::addCell(
+            ss,
+            data.getField(row, i),
+            data.getWidthVec()[i],
+            act;
+        )
+    }
     ss << "\033[K\n";   // вместо ss << '\n'
 
     return ss.str();
@@ -372,11 +310,7 @@ bool Editor::beforeShow() {
         LOG_ERROR("В файле данных о студентах нет записи"); 
         std::cout << "Нет данных для отображения.\n"; 
         return false; 
-    }
-
-    updateMenu();
-
-    
+    }    
 
     menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
     
@@ -477,6 +411,6 @@ StateType EditMenu::handleNav() {
         return MenuLogic::handleNav();
     }
     else{
-        
+
     }
 }

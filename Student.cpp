@@ -4,24 +4,18 @@ void StudentDB::load(const std::vector<StudentInfo>& loaded_data) {
     info = loaded_data;
 }
 
+int StudentDB::numWidth() { 
+    int width =
+        static_cast<int>(std::to_string(info.size()).length());
+    return width;
+}
+
+std::vector<int> getWidthVec(); {
+    numWidth(), NAME_WIDTH, GROUP_WIDTH, PASS_WIDTH, DIGIT_WIDTH
+}
+
 unsigned int StudentDB::getRow(size_t i) const {
     return (i < info.size()) ? info[i].row : 0;
-}
-
-std::string StudentDB::getName(size_t i) const {
-    return (i < info.size()) ? info[i].name : "";
-}
-
-std::string StudentDB::getGroup(size_t i) const {
-    return (i < info.size()) ? info[i].group : "";
-}
-
-std::string StudentDB::getPass(size_t i) const {
-    return (i < info.size()) ? info[i].pass : "";
-}
-
-std::string StudentDB::getNum(size_t i) const {
-    return (i < info.size()) ? info[i].num : "";
 }
 
 std::string StudentDB::getField(size_t i, Inf field) const {
