@@ -178,11 +178,10 @@ private:
     std::vector<StudentInfo> temp_info;
     bool is_mod;
 
-	bool beforeShow() override;
+	//bool beforeShow() override;
     StateType handleNav() override;
 
     std::string createString();
-	int num_width = 0;
     
 public:
     EditMenu(StudentDB& base, Position act);
