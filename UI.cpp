@@ -1,32 +1,6 @@
 #include "UI.h"
 #include "Student.h"
 
-namespace input {
-    bool getAnyKey() {
-        while (_getch() == static_cast<int>(key::Extended)) {}
-        return true;
-    }
-
-    key getKey(int ch) {
-
-        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
-        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
-            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
-        }
-
-        // Преобразуем код в enum
-        switch (ch) {
-        case static_cast<int>(key::Up):    return key::Up;
-        case static_cast<int>(key::Down):  return key::Down;
-        case static_cast<int>(key::Left):  return key::Left;
-        case static_cast<int>(key::Right): return key::Right;
-        case static_cast<int>(key::Enter): return key::Enter;
-        case static_cast<int>(key::Esc):   return key::Esc;
-        case static_cast<int>(key::Tab):   return key::Tab;
-        default:                           return key::Null;
-        }
-    }
-}
 
 namespace UI {
     size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
@@ -63,10 +37,27 @@ namespace UI {
         std::ostringstream& ss,
         const std::string& value,
         size_t width,
-        bool active)
+        bool active,
+        SelType cell_type
+    )
     {
+        std::string cell_str;
+        switch (cell_type) {
+        case SelType::Selected:
+            cell_str = "\033[30;47m";          // серый фон
+            break;
+
+        case SelType::Yellow:
+            cell_str = "\033[30;43m";          // жёлтый фон
+            break;
+        case SelType::Underlined:
+            cell_str = "\033[4;97;40m";
+            break;
+        default:
+            break;
+        }
         if (active)
-            ss << "\033[30;47m";
+            ss << cell_str;
 
         ss << " "
             << padRight(value, width)
@@ -172,8 +163,7 @@ std::string MenuLogic::showUI() {
 StateType MenuLogic::handleNav() {
     input::key key = input::getKey();
     MenuNav nav = GetAction(key);
-    bool cont = true;
-	size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
+	size_t act_row = menu_out.act.row; //буфер активной строки
     int itter = 0;
     switch (nav) {
     case MenuNav::Up:
@@ -213,27 +203,27 @@ StateType MenuLogic::handleNav() {
         if (menu_out.act.col + 1 < menu_out.total.col) menu_out.act.col++;
         break;
     case MenuNav::Back:
-        LOG_INFO("Пользователь нажал ESC. Выход из просмотрщика.");
+        LOG_INFO("Пользователь нажал ESC.");
         return menu_out.before_state;
     case MenuNav::Enter:
         LOG_INFO("Пользователь нажал Enter. Переход к редактированию.");
         return menu_out.menu[menu_out.act.row].state_aft_ent;
     case MenuNav::KeyTab:
         LOG_INFO("Нажатие Таба");
+        system("cls"); //Иначе текст наславиается
         menu_out.tab_ent = !menu_out.tab_ent;
         break;
     default:
         break;
     }
-    cont = menu_out.menu[menu_out.act.row].show;
 
     return StateType::NONE;
 }
 
 
 
-Editor::Editor(StudentDB& students) : data(students) {
-    LOG_INFO("Запуск конструктора Editor");
+Viewer::Viewer(StudentDB& students) : data(students) {
+    LOG_INFO("Запуск конструктора Viewer");
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
     menu_out.act = { 0, 0 }; // Начальная активная позиция
@@ -272,7 +262,7 @@ Editor::Editor(StudentDB& students) : data(students) {
         menu_out.menu[i].show = false;
         menu_out.menu[i].enter = true;
 
-		menu_out.menu[i].state_aft_ent = StateType::EditorMenu;
+		menu_out.menu[i].state_aft_ent = StateType::ViewerMenu;
     }
 
     menu_out.ActMark = "";
@@ -280,7 +270,7 @@ Editor::Editor(StudentDB& students) : data(students) {
     
 };
 
-std::string Editor::createString(size_t row)
+std::string Viewer::createString(size_t row)
 {
     std::ostringstream ss;
 
@@ -300,7 +290,7 @@ std::string Editor::createString(size_t row)
     return ss.str();
 }
 
-bool Editor::beforeShow() {
+bool Viewer::beforeShow() {
     windowSize();
 
     if (data.empty()) { 
@@ -342,13 +332,13 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     menu_out.total.row = menu_str.size();
     menu_out.total.col = data.INFO_COL_COUNT;
     menu_out.act = { 1, pos.col };
-    menu_out.before_state = StateType::Editor;
+    menu_out.before_state = StateType::Viewer;
     menu_out.menu.resize(menu_str.size());
     for (size_t i = 1; i < menu_str.size(); ++i) {
         menu_out.menu[i].name = menu_str[i];
         menu_out.menu[i].show = true;
         menu_out.menu[i].enter = true;
-        menu_out.menu[i].state_aft_ent = StateType::EditorMenu; // После выбора пункта меню остаемся в этом же меню
+        menu_out.menu[i].state_aft_ent = StateType::ViewerMenu; // После выбора пункта меню остаемся в этом же меню
     }
 	menu_out.menu[0].param = [this]() { return createString(); };
 	menu_out.menu[0].enter = false; // Первый пункт меню не выбирается, он просто отображает текущую строку
@@ -362,52 +352,84 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
 std::string EditMenu::createString()
 {
     std::ostringstream ss;
+    UI::SelType sel_type = menu_out.tab_ent ? UI::SelType::Selected : UI::SelType::Underlined;
 
-    UI::addCell(
-        ss,
-        std::to_string(data.getRow(pos.row)),
-        data.getWidthVec()[0],
-        false
-    );
-
-    UI::addCell(
-        ss,
-        data.getField(pos.row, Inf::name),
-        data.getWidthVec()[1],
-        pos.col == 0
-    );
-
-    UI::addCell(
-        ss,
-        data.getField(pos.row, Inf::group),
-        data.getWidthVec()[2],
-        pos.col == 1
-    );
-
-    UI::addCell(
-        ss,
-        data.getField(pos.row, Inf::pass),
-        data.getWidthVec()[3],
-        pos.col == 2
-    );
-
-    UI::addCell(
-        ss,
-        data.getField(pos.row, Inf::num),
-        data.getWidthVec()[4],
-        pos.col == 3
-    );
+    for (int i = 0; i < data.INFO_COL_COUNT; i++) {
+        UI::addCell(
+            ss,
+            data.getField(pos.row, i),
+            data.getWidthVec()[i],
+            pos.col == i - 1,
+            sel_type
+        );
+    }
 
     ss << "\033[K\n";   // вместо ss << '\n'
 
     return ss.str();
 }
 
+bool EditMenu::beforeShow() {
+	bool res = MenuLogic::beforeShow();
+	if (data.empty()) {
+		LOG_ERROR("В файле данных о студентах нет записи");
+		std::cout << "Нет данных для отображения.\n";
+		return 0;
+	}
+	menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
+    if (menu_out.tab_ent) {
+        menu_out.post_show = "\n"
+            "Выберите поле в таблице.\n"
+            "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
+            "Нажмите ESC для возврата в меню просмотра";
+		menu_out.act.row = -1; // Если мы редактируем поле, то активная строка - это строка с полем
+    }
+    else {
+        menu_out.post_show = "\n"
+            "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
+            "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
+    }
+	return res;
+}
+
 StateType EditMenu::handleNav() {
-    if (!menu_out.tab_ent){
+	if (!menu_out.tab_ent) { // Меню редактирования поля
         return MenuLogic::handleNav();
     }
-    else{
-		return StateType::EditorMenu; // Если Tab нажат, то возвращаемся в меню редактирования, чтобы пользователь мог изменить поле
+    else { // меню перемещения между полями
+        LOG_INFO("Меню перемещения между полями");
+        input::key key = input::getKey();
+        MenuNav nav = GetAction(key);
+        size_t act_row = menu_out.act.row; //буфер активной строки
+        int itter = 0;
+        switch (nav) {
+        case MenuNav::KeyTab:
+        case MenuNav::Enter:
+            LOG_INFO("Нажатие Таба");
+            system("cls"); //Иначе текст наславиается
+            menu_out.tab_ent = !menu_out.tab_ent;
+			menu_out.act.row = 1; // Возвращаем активную строку на первую строку меню, 0 - это строка с полем
+            break;
+        case MenuNav::Up:
+            if (pos.row > 0) pos.row--; //Поднимаем указатель строки
+            break;
+        case MenuNav::Down:
+            if (pos.row + 1 < data.size()) pos.row++; //Опускаем указатель строки
+            break;
+        case MenuNav::Left:
+            if (pos.col > 0) pos.col--;
+            break;
+        case MenuNav::Right:
+            if (pos.col + 1 < data.INFO_COL_COUNT - 1) pos.col++; //-1 т.к. нельзя выбирать номер строки
+            break;
+        case MenuNav::Back:
+            LOG_INFO("Пользователь нажал ESC.");
+            return menu_out.before_state;
+        default:
+            break;
+        }
     }
+
+
+	return StateType::NONE;
 }

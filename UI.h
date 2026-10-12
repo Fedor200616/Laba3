@@ -14,32 +14,12 @@
 #include "Student.h"
 #include "Main.h"
 #include "Log.h"
+#include "Input.h"
 
-namespace input {
-    enum class key
-    {
-        Up = 72,
-        Down = 80,
-        Left = 75,
-        Right = 77,
-
-        Enter = 13,
-        Esc = 27,
-
-        Tab = 9,
-        Modif = 42, // Левый шифт
-
-        Extended = 224,
-        Null = 0
-    };
-
-    bool getAnyKey();
-
-    key getKey(int ch = _getch());
-
-}
 
 namespace UI {
+    enum class SelType { Selected, Yellow, Underlined};
+
     size_t utf8Length(const std::string& str);
 
     std::string padRight(const std::string& str, size_t width);
@@ -55,7 +35,9 @@ namespace UI {
         std::ostringstream& ss,
         const std::string& value,
         size_t width,
-        bool active);
+        bool active = false,
+        SelType cell_type = SelType::Selected
+    );
 
     std::string header(int num_width, StudentDB& data);
 }
@@ -134,14 +116,14 @@ protected:
 
 };
 
-class Editor : public MenuLogic {
+class Viewer : public MenuLogic {
 private:
     StudentDB& data;
 
     int num_width = 0;
     int menu_width = 0;
 public:
-    Editor(StudentDB& students);
+    Viewer(StudentDB& students);
 	Position getActivePosition() const {
 		return menu_out.act;
 	}
@@ -165,20 +147,21 @@ private:
 class EditMenu : public MenuLogic {
 private:
     StudentDB& data;
-	Position pos; //позиция активного поля в меню Editor, которое мы редактируем
+	Position pos; //позиция активного поля в меню Viewer, которое мы редактируем
 
     const std::vector<std::string> menu_str = {
-        "Изменить",
-        "Заменить поля с данным именем",
-        "Удалить строку",
-        "Добавить строку сверху",
-        "Добавить строку снизу",
-        "Отменить изменения"
+        "",
+        "Изменить", // делаем сейчас
+        "Заменить поля с данным именем", // примерно после создание основного меню, чтоб вызывалось одно меню, ток  с введенным полем
+        "Удалить строку", // делать легко, на уровне функции StudentDB
+        "Добавить строку сверху", // делать легко
+        "Добавить строку снизу", //делать легко
+        "Вернуться к просмотру полей"
     }; // Возможно тут добавить возможность отмены и сохранения изменений
     std::vector<StudentInfo> temp_info;
     bool is_mod;
 
-	//bool beforeShow() override;
+	bool beforeShow() override;
     StateType handleNav() override;
 
     std::string createString();

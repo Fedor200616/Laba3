@@ -18,7 +18,7 @@ Application::Application(int argc, char* argv[])
         auto loaded_students = file_manager.loadFromFile();
         students_info.load(loaded_students);
 
-        current_state = StateType::Editor;
+        current_state = StateType::Viewer;
         start_with_path = true;
     }
     else {
@@ -34,13 +34,13 @@ void Application::run() {
     while (current_state != StateType::EXIT) {
 		system("cls"); // Очистка экрана для Windows
         switch (current_state) {
-        case StateType::Editor:{ 
-            Editor editor(students_info);
-            current_state = editor.menuShow();
-            act_pos = editor.getActivePosition();
+        case StateType::Viewer:{ 
+            Viewer Viewer(students_info);
+            current_state = Viewer.menuShow();
+            act_pos = Viewer.getActivePosition();
             break;
         }
-        case StateType::EditorMenu: {
+        case StateType::ViewerMenu: {
             //LOG_WARN("Данный функционал еще не реализован. Возврат в меню редактирования.");
             LOG_INFO("Выбрано поле для редактирования: строка " + std::to_string(act_pos.row) + ", колонка " + std::to_string(act_pos.col) + ", название " + students_info.getField(act_pos.row, act_pos.col));
             EditMenu edit_menu(students_info, act_pos);

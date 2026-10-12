@@ -24,11 +24,11 @@ private:
     std::vector<StudentInfo> info;
 public:
     //Константы
-    const int NAME_WIDTH = 20;
-    const int GROUP_WIDTH = 12;
-    const int PASS_WIDTH = 20;
-    const int DIGIT_WIDTH = 5;
-    const int INFO_COL_COUNT = 5;
+    const int NAME_WIDTH = 20; // Длина поля имени
+    const int GROUP_WIDTH = 12; // длина поля группы
+    const int PASS_WIDTH = 20; // длина поля пароля
+    const int DIGIT_WIDTH = 5; // Длина поля номера в группе
+    const int INFO_COL_COUNT = 5; // Количество полей в таблице
     const std::vector<std::string> HEADER = {
         "#", "Имя", "Группа", "Пароль", "Номер"
     };

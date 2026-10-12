@@ -22,7 +22,7 @@ private:
 
     bool start_with_path = false;
 
-	Position act_pos; // Позиция активного элемента в меню Editor
+	Position act_pos; // Позиция активного элемента в меню Viewer
 
 public:
     Application(int argc, char* argv[]);
