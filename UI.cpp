@@ -86,9 +86,9 @@ namespace UI {
             addCell(
                 ss,
                 data.HEADER[i],
-                data.WIDTH_VEC[i],
+                data.getWidthVec()[i],
                 false
-            )
+            );
         }
         ss << '\n';
         return ss.str();
@@ -220,7 +220,7 @@ StateType MenuLogic::handleNav() {
         return menu_out.menu[menu_out.act.row].state_aft_ent;
     case MenuNav::KeyTab:
         LOG_INFO("Нажатие Таба");
-        tab_ent = !tab_ent;
+        menu_out.tab_ent = !menu_out.tab_ent;
         break;
     default:
         break;
@@ -245,19 +245,16 @@ Editor::Editor(StudentDB& students) : data(students) {
         //data.addEmpty(); // Добавляем пустую запись, чтобы корректно отображалась шапка
 	}
 
-    num_width =
-        static_cast<int>(std::to_string(max_rows).length());
-
     menu_width =
-        num_width +
-        data.NAME_WIDTH +
-        data.GROUP_WIDTH +
-        data.PASS_WIDTH +
-        data.NUM_WIDTH +
+        data.numWidth() +
+        data.getWidthVec()[0] +
+        data.getWidthVec()[1] +
+        data.getWidthVec()[2] +
+        data.getWidthVec()[3] +
         static_cast<int>(menu_out.total.col) +
         12; // нужно для ровного отображения получено эксп. путем
 
-    menu_out.before_show = UI::header(num_width, data);
+    menu_out.before_show = UI::header(data.numWidth(), data);
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
@@ -289,14 +286,14 @@ std::string Editor::createString(size_t row)
 
     bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
 
-    for(int i = 0; i < INFO_COL_COUNT; i++){
-        bool act = active_row && i = menu_out.act.col + 1; //-1 т.к. нельзя выбирать номер строки
+    for(int i = 0; i < data.INFO_COL_COUNT; i++){
+        bool act = active_row && (i == menu_out.act.col + 1); //-1 т.к. нельзя выбирать номер строки
         UI::addCell(
             ss,
             data.getField(row, i),
             data.getWidthVec()[i],
-            act;
-        )
+            act
+        );
     }
     ss << "\033[K\n";   // вместо ss << '\n'
 
@@ -340,7 +337,7 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
     LOG_INFO("Запуск конструктора EditMenu");
     temp_info = data.getInfoVec();
     is_mod = false;
-    num_width = static_cast<int>(std::to_string(data.size()).length());
+    data.getWidthVec()[0] = static_cast<int>(std::to_string(data.size()).length());
     //создаем образ меню
     menu_out.total.row = menu_str.size();
     menu_out.total.col = data.INFO_COL_COUNT;
@@ -356,7 +353,7 @@ EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
 	menu_out.menu[0].param = [this]() { return createString(); };
 	menu_out.menu[0].enter = false; // Первый пункт меню не выбирается, он просто отображает текущую строку
 
-    menu_out.before_show = UI::header(num_width, data);
+    menu_out.before_show = UI::header(data.getWidthVec()[0], data);
     menu_out.post_show = "\n"
         "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
         "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
@@ -369,35 +366,35 @@ std::string EditMenu::createString()
     UI::addCell(
         ss,
         std::to_string(data.getRow(pos.row)),
-        num_width,
+        data.getWidthVec()[0],
         false
     );
 
     UI::addCell(
         ss,
-        data.getName(pos.row),
-        data.NAME_WIDTH,
+        data.getField(pos.row, Inf::name),
+        data.getWidthVec()[1],
         pos.col == 0
     );
 
     UI::addCell(
         ss,
-        data.getGroup(pos.row),
-        data.GROUP_WIDTH,
+        data.getField(pos.row, Inf::group),
+        data.getWidthVec()[2],
         pos.col == 1
     );
 
     UI::addCell(
         ss,
-        data.getPass(pos.row),
-        data.PASS_WIDTH,
+        data.getField(pos.row, Inf::pass),
+        data.getWidthVec()[3],
         pos.col == 2
     );
 
     UI::addCell(
         ss,
-        data.getNum(pos.row),
-        data.NUM_WIDTH,
+        data.getField(pos.row, Inf::num),
+        data.getWidthVec()[4],
         pos.col == 3
     );
 
@@ -411,6 +408,6 @@ StateType EditMenu::handleNav() {
         return MenuLogic::handleNav();
     }
     else{
-
+		return StateType::EditorMenu; // Если Tab нажат, то возвращаемся в меню редактирования, чтобы пользователь мог изменить поле
     }
 }

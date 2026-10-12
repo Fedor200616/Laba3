@@ -12,11 +12,11 @@ struct StudentInfo {
 };
 
 enum class Inf {
-    num,
+    row,
     name,
     group,
     pass,
-    digit
+    num
 };
 
 class StudentDB { //Следует сменить на просто DataBase
@@ -38,7 +38,7 @@ public:
 
     //Геттеры
     int numWidth() const;
-    std::vector<int> getWidthVec(); 
+    std::vector<int> getWidthVec() const;
     unsigned int getRow(size_t i) const;
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
