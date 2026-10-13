@@ -3,7 +3,7 @@
 #include <conio.h>
 
 namespace {
-    std::string toUtf8(const std::wstring& w) {
+    std::string toUtf8(const std::wstring& w) { //Функция перевода широких строк  в обычные в utf8
         if (w.empty()) return {};
         int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
         std::string s(n, '\0');
@@ -11,7 +11,7 @@ namespace {
         return s;
     }
 
-    std::wstring fromUtf8(const std::string& s) {
+    std::wstring fromUtf8(const std::string& s) { // Перевод из строки в Wstring с utf8
         if (s.empty()) return {};
         int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0);
         std::wstring w(n, L'\0');
@@ -63,7 +63,7 @@ namespace input {
     }
 
 
-    key getKey() { return readKeyEvent(false).code; }
+    key getKey() { return readKeyEvent(false).code; } //Перевод ивента клавиши в ее тип, для кнопок
 
     // ---------- TextInput ----------
 
@@ -87,7 +87,7 @@ namespace input {
     /// </returns>
     TextInput::Result TextInput::handle(const KeyEvent& ev) {
         switch (ev.code) {
-        case key::Enter: return Result::Accepted;
+        case key::Enter: return Result::Accepted; 
         case key::Esc:   return Result::Cancelled;
         case key::Left:  if (pos > 0) --pos; break;
         case key::Right: if (pos < buf.size()) ++pos; break;
@@ -100,10 +100,10 @@ namespace input {
             if (pos < buf.size()) buf.erase(pos, 1);
             break;
         default:
-            if (ev.ch != 0
-                && forbidden.find(ev.ch) == std::wstring::npos
-                && buf.size() < max_len) {
-                buf.insert(pos, 1, ev.ch);
+            if (ev.ch != 0 //Проверяет, что введённый символ не равен нулю
+                && forbidden.find(ev.ch) == std::wstring::npos //Проверяет, что символ отсутствует в строке forbidden, то есть не запрещён.
+                && buf.size() < max_len) { //Проверяет, что буфер ещё не достиг максимальной длины.
+                buf.insert(pos, 1, ev.ch); //то вставляем символ
                 ++pos;
             }
         }
