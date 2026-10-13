@@ -77,9 +77,6 @@ Testing/
 *.suo
 *.db
 *.opendb
-*.vcxproj
-*.sln
-*.filters
 
 # Директории скомпилированного кода и сборки
 x64/
