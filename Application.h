@@ -18,11 +18,11 @@ private:
 
     Info app_info;
     File file_manager;
-    StudentDB students_info;
+    DataBase students_info;
 
     bool start_with_path = false;
 
-	Position act_pos; // Позиция активного элемента в меню Viewer
+	Position db_act_pos; // Позиция активного элемента в данных
 
 public:
     Application(int argc, char* argv[]);

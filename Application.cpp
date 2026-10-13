@@ -24,7 +24,7 @@ Application::Application(int argc, char* argv[])
     else {
         LOG_WARN("Файл не указан или не найден.");
     }
-
+    db_act_pos = { 0, 0 };
 }
 
 void Application::run() {
@@ -35,16 +35,22 @@ void Application::run() {
 		system("cls"); // Очистка экрана для Windows
         switch (current_state) {
         case StateType::Viewer:{ 
-            Viewer Viewer(students_info);
+            Viewer Viewer(students_info, db_act_pos);
             current_state = Viewer.menuShow();
-            act_pos = Viewer.getActivePosition();
+            db_act_pos = Viewer.getActivePosition();
             break;
         }
-        case StateType::ViewerMenu: {
+        case StateType::EditMenu: {
             //LOG_WARN("Данный функционал еще не реализован. Возврат в меню редактирования.");
-            LOG_INFO("Выбрано поле для редактирования: строка " + std::to_string(act_pos.row) + ", колонка " + std::to_string(act_pos.col) + ", название " + students_info.getField(act_pos.row, act_pos.col));
-            EditMenu edit_menu(students_info, act_pos);
+            LOG_INFO("Выбрано поле для редактирования: строка " + std::to_string(db_act_pos.row) + ", колонка " + std::to_string(db_act_pos.col) + ", название " + students_info.getField(db_act_pos.row, db_act_pos.col + 1));
+            EditMenu edit_menu(students_info, db_act_pos);
             current_state = edit_menu.menuShow();
+            break;
+        }
+        case StateType::EditField: {
+            LOG_INFO("изменение поля: строка " + std::to_string(db_act_pos.row) + ", колонка " + std::to_string(db_act_pos.col) + ", название " + students_info.getField(db_act_pos.row, db_act_pos.col + 1));
+            EditField edit_field(students_info, db_act_pos);
+            current_state = edit_field.menuShow();
             break;
         }
         case StateType::_ERROR:

@@ -63,7 +63,7 @@ namespace input {
     }
 
 
-    key getKey() { return readKeyEvent(false).code; } //Перевод ивента клавиши в ее тип, для кнопок
+    key getKey() { return readKeyEvent().code; } //Перевод ивента клавиши в ее тип, для кнопок
 
     // ---------- TextInput ----------
 
@@ -122,7 +122,7 @@ namespace input {
     /// <returns>Содержимое буфера с символом курсора в позиции pos (UTF-8)</returns>
     std::string TextInput::display() const {
         std::wstring w = buf;
-        w.insert(pos, 1, L'\u258C');   // курсор ▌
+         w.insert(pos, 1, L'\u258C');   // курсор ▌
         return toUtf8(w);
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "Log.h"
 
 // Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
@@ -19,7 +20,7 @@ enum class Inf {
     num
 };
 
-class StudentDB { //Следует сменить на просто DataBase
+class DataBase { //Следует сменить на просто DataBase
 private:
     std::vector<StudentInfo> info;
 public:
@@ -43,11 +44,15 @@ public:
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
     std::vector<StudentInfo> getInfoVec() const;
-
-    //Изменение данных
-
-
     // Геттеры информации о базе
     size_t size() const { return info.size(); }
     bool empty() const { return info.empty(); }
+
+    //Изменение данных
+    void updateNum();
+    void setField(size_t row, size_t col, std::string str = "");
+    void setField(size_t row, Inf col, std::string str = "");
+    void removeRow(size_t row);
+    void insertRow(size_t row = -1);
+
 };

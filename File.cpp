@@ -34,7 +34,7 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i, cha
         field_idx++; //ОБЯЗАТЕЛЬНО увеличиваем индекс колонки!
 
         if (clean_field == "Нет данных") {
-            clean_field = "-"; // Либо оставляем "Нет данных", если так нужно по ТЗ
+            clean_field = ""; // Либо оставляем "Нет данных", если так нужно по ТЗ
         }
 
         switch (field_idx) {

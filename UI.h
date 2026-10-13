@@ -39,15 +39,17 @@ namespace UI {
         SelType cell_type = SelType::Selected
     );
 
-    std::string header(int num_width, StudentDB& data);
+    std::string header(int num_width, DataBase& data);
 }
 
 struct MenuStr {
     std::string name = "";
+    std::function<std::string()> param = nullptr;
+    std::function<void()> act_aft = nullptr;
+    StateType state_aft = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
+    
     bool show = true; // Отображать ли пунтк меню
     bool enter = true; // может ли пользователь выбрать данный пункт меню
-    std::function<std::string()> param = nullptr;
-    StateType state_aft_ent = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
 };
 
 struct Position{
@@ -95,10 +97,12 @@ public:
     
     StateType menuShow();
 
+    Position getActivePosition() const {
+        return menu_out.act;
+    }
+
 protected:
-    MenuOut menu_out;
-    //bool finished = false;
-    //StateType next_state;      
+    MenuOut menu_out;   
     
     MenuNav GetAction(input::key key_code) const;
 
@@ -106,27 +110,20 @@ protected:
     std::string showUI(); // Функция показа меню
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
-
     bool windowSize() const {
-        // Возвращаем курсор в начало экрана (без сброса экрана и мерцания)
         std::cout << "\033[H";
-        //system("cls");
         return true;
     }
-
 };
 
 class Viewer : public MenuLogic {
 private:
-    StudentDB& data;
+    DataBase& data;
 
     int num_width = 0;
     int menu_width = 0;
 public:
-    Viewer(StudentDB& students);
-	Position getActivePosition() const {
-		return menu_out.act;
-	}
+    Viewer(DataBase& students, Position db_act);
 
 private: 
 
@@ -146,19 +143,9 @@ private:
 
 class EditMenu : public MenuLogic {
 private:
-    StudentDB& data;
-	Position pos; //позиция активного поля в меню Viewer, которое мы редактируем
+    DataBase& data;
+	Position& pos; //позиция активного поля в меню Viewer, которое мы редактируем
 
-    const std::vector<std::string> menu_str = {
-        "",
-        "Изменить", // делаем сейчас
-        "Заменить поля с данным именем", // примерно после создание основного меню, чтоб вызывалось одно меню, ток  с введенным полем
-        "Удалить строку", // делать легко, на уровне функции StudentDB
-        "Добавить строку сверху", // делать легко
-        "Добавить строку снизу", //делать легко
-        "Вернуться к просмотру полей"
-    }; // Возможно тут добавить возможность отмены и сохранения изменений
-    std::vector<StudentInfo> temp_info;
     bool is_mod;
 
 	bool beforeShow() override;
@@ -166,6 +153,60 @@ private:
 
     std::string createString();
     
+    //Функции работы с БД
+    void deleteRow();
+    enum class AddType {
+        Before,
+        After,
+        End
+    };
+    void addStr(AddType type);
+
 public:
-    EditMenu(StudentDB& base, Position act);
-}; //Кароче перегрузим HandleNav, и в одном режиме мы выбираем базовый, а в другом пишем свой, и все чикибумбони
+    EditMenu(DataBase& base, Position& db_act);
+}; 
+
+
+class EditField : public MenuLogic {
+public:
+    EditField(DataBase& db, Position& p);
+private:
+    DataBase& data;
+    Position& pos;
+    input::TextInput input_line;
+
+    std::string createString();
+    StateType handleNav() override;
+};
+
+
+
+class EditAllField : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
+protected:
+    DataBase& data;
+    Position& pos;
+
+    std::string field;
+    std::string old_str;
+    std::string new_str = "";
+    size_t match = 0; //совпадения поиска
+
+    input::TextInput input_line;
+    void startInput(); // Функция печати для поиска
+    void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
+
+    EditAllField(DataBase& d, Position& p) : data(d), pos(p) {
+        field = data.HEADER[pos.col + 1];
+        old_str = data.getField(pos.row, pos.col);
+
+        using S = StateType;
+        menu_out.menu = {
+            {.name = "Поле:", .param = [this]() {return field; }, .act_aft = [this]() {changeField(); }},
+            {.name = "Найти:", .param = [this]() {return old_str; }, .act_aft = [this]() { startInput(); }},
+            {.name = "Заменить на:", .param = [this]() {return new_str; }, .act_aft = [this]() { startInput(); }},
+            {.name = "Найдено совпадений:", .param = [this]() {return std::to_string(match); } },
+            {.name = "Заменить", .act_aft = [this]() {}} // Мы не изменяем стейт, смена в наследнике, если нужно
+        };
+        menu_out.post_show = "";
+    }
+};

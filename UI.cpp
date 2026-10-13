@@ -69,7 +69,7 @@ namespace UI {
         ss << "|";
     }
 
-    std::string header(int num_width, StudentDB& data)
+    std::string header(int num_width, DataBase& data)
     {
         std::ostringstream ss;
         ss << " "; // Без этого шапка сьезжает на 1 символ влево
@@ -205,9 +205,12 @@ StateType MenuLogic::handleNav() {
     case MenuNav::Back:
         LOG_INFO("Пользователь нажал ESC.");
         return menu_out.before_state;
-    case MenuNav::Enter:
-        LOG_INFO("Пользователь нажал Enter. Переход к редактированию.");
-        return menu_out.menu[menu_out.act.row].state_aft_ent;
+    case MenuNav::Enter: {
+        LOG_INFO("Пользователь нажал Enter.");
+        auto& item = menu_out.menu[menu_out.act.row];
+        if (item.act_aft) item.act_aft();
+        return item.state_aft;
+    }
     case MenuNav::KeyTab:
         LOG_INFO("Нажатие Таба");
         system("cls"); //Иначе текст наславиается
@@ -220,13 +223,13 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//=======================Viewer=======================
 
-
-Viewer::Viewer(StudentDB& students) : data(students) {
+Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
-    menu_out.act = { 0, 0 }; // Начальная активная позиция
+    menu_out.act = db_act; // Начальная активная позиция
 
     size_t max_rows = menu_out.total.row;
     if (max_rows < 1) {
@@ -262,7 +265,7 @@ Viewer::Viewer(StudentDB& students) : data(students) {
         menu_out.menu[i].show = false;
         menu_out.menu[i].enter = true;
 
-		menu_out.menu[i].state_aft_ent = StateType::ViewerMenu;
+		menu_out.menu[i].state_aft = StateType::EditMenu;
     }
 
     menu_out.ActMark = "";
@@ -323,25 +326,31 @@ bool Viewer::beforeShow() {
     return true;
 }
 
-EditMenu::EditMenu(StudentDB& base, Position act) : data(base), pos(act){
+//=======================EditMenu=======================
+
+EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
     LOG_INFO("Запуск конструктора EditMenu");
-    temp_info = data.getInfoVec();
     is_mod = false;
-    data.getWidthVec()[0] = static_cast<int>(std::to_string(data.size()).length());
+
+    using S = StateType;
+    if (data.size() < 1) addStr(AddType::End);
+    menu_out.menu = {
+        // Item::Row: строка студента, не выбирается
+        {.param = [this]() { return createString(); }, .enter = false },
+
+        {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
+        {.name = "Заменить все поля с данным именем", .state_aft = S::EditAllField},  // после основного меню: то же меню, только с введённым полем
+        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
+        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
+        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
+        {.name = "Вернуться к просмотру полей", .state_aft = S::Viewer },
+    };
+
     //создаем образ меню
-    menu_out.total.row = menu_str.size();
-    menu_out.total.col = data.INFO_COL_COUNT;
-    menu_out.act = { 1, pos.col };
-    menu_out.before_state = StateType::Viewer;
-    menu_out.menu.resize(menu_str.size());
-    for (size_t i = 1; i < menu_str.size(); ++i) {
-        menu_out.menu[i].name = menu_str[i];
-        menu_out.menu[i].show = true;
-        menu_out.menu[i].enter = true;
-        menu_out.menu[i].state_aft_ent = StateType::ViewerMenu; // После выбора пункта меню остаемся в этом же меню
-    }
-	menu_out.menu[0].param = [this]() { return createString(); };
-	menu_out.menu[0].enter = false; // Первый пункт меню не выбирается, он просто отображает текущую строку
+    menu_out.total.row = menu_out.menu.size();
+    menu_out.total.col = data.INFO_COL_COUNT - 1;
+    menu_out.act = { 1, pos.col }; // стартуем на «Изменить»
+    menu_out.before_state = S::Viewer;
 
     menu_out.before_show = UI::header(data.getWidthVec()[0], data);
     menu_out.post_show = "\n"
@@ -385,6 +394,7 @@ bool EditMenu::beforeShow() {
 		menu_out.act.row = -1; // Если мы редактируем поле, то активная строка - это строка с полем
     }
     else {
+        pos.col = menu_out.act.col;
         menu_out.post_show = "\n"
             "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
             "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
@@ -432,4 +442,72 @@ StateType EditMenu::handleNav() {
 
 
 	return StateType::NONE;
+}
+
+void EditMenu::deleteRow() { 
+    data.removeRow(pos.row);
+    if (pos.row >= data.size()) pos.row = data.size() - 1;
+}
+
+void EditMenu::addStr(AddType type) {
+    switch (type) {
+    case AddType::Before:
+        data.insertRow(pos.row);
+        break;
+    case AddType::After:
+        data.insertRow(pos.row + 1);
+        ++pos.row;
+        break;
+    default:
+        data.insertRow(data.size());
+        pos.row = data.size() - 1;
+        break;
+    }
+}
+
+//=======================EditField=======================
+EditField::EditField(DataBase& db, Position& p) : data(db), pos(p) {
+    LOG_INFO("Запуск конструктора EditField");
+
+    menu_out.menu = {
+        {.param = [this]() { return createString(); }, .enter = false },
+    };
+    menu_out.total = { 1, 0 };
+    menu_out.act = { 0, 0 };
+    menu_out.ActMark = menu_out.InactMark = "";
+    menu_out.before_state = StateType::EditMenu;
+
+    menu_out.before_show = UI::header(data.numWidth(), data);
+    menu_out.post_show = "\nВведите значение. Enter: сохранить, Esc: отмена\033[K";
+
+    // max_len на 1 меньше ширины колонки, чтобы влез курсор ▌
+    input_line.start(data.getField(pos.row, pos.col + 1),
+        data.getWidthVec()[pos.col + 1]);
+}
+
+std::string EditField::createString() {
+    std::ostringstream ss;
+    for (size_t i = 0; i < static_cast<size_t>(data.INFO_COL_COUNT); i++) {
+        bool cur = (i == pos.col + 1);
+        UI::addCell(ss,
+            cur ? input_line.display() : data.getField(pos.row, i),
+            data.getWidthVec()[i],
+            cur,
+            UI::SelType::Selected);
+    }
+    ss << "\033[K\n";
+    return ss.str();
+}
+
+StateType EditField::handleNav() {
+    switch (input_line.handle(input::readKeyEvent())) {
+    case input::TextInput::Result::Accepted:
+        data.setField(pos.row, pos.col + 1, input_line.text());
+        LOG_INFO("Поле изменено");
+        return StateType::EditMenu;
+    case input::TextInput::Result::Cancelled:
+        return StateType::EditMenu;
+    default:
+        return StateType::NONE;
+    }
 }
