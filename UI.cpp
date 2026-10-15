@@ -1,6 +1,99 @@
 #include "UI.h"
 #include "Student.h"
 
+namespace input {
+    bool getAnyKey() {
+        while (_getch() == static_cast<int>(key::Extended)) {}
+        return true;
+    }
+
+    key getKey(int ch) {
+
+        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
+        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
+            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
+        }
+
+        // Преобразуем код в enum
+        switch (ch) {
+        case static_cast<int>(key::Up):    return key::Up;
+        case static_cast<int>(key::Down):  return key::Down;
+        case static_cast<int>(key::Left):  return key::Left;
+        case static_cast<int>(key::Right): return key::Right;
+        case static_cast<int>(key::Enter): return key::Enter;
+        case static_cast<int>(key::Esc):   return key::Esc;
+        case static_cast<int>(key::Tab):   return key::Tab;
+        default:                           return key::Null;
+        }
+    }
+}
+
+namespace UI {
+    size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
+    {
+        size_t count = 0;
+
+        for (unsigned char c : str)
+        {
+            if ((c & 0xC0) != 0x80) // Если старшие два бита не равны 10, значит это начало нового символа
+                ++count;
+        }
+
+        return count;
+    }
+
+    std::string padRight(const std::string& str, size_t width) // Функция для выравнивания строки по ширине, учитывая UTF-8 символы
+    {
+        size_t length = utf8Length(str);
+
+        if (length >= width)
+            return str;
+
+        return str + std::string(width - length, ' ');
+    }
+
+    /// <summary>
+    /// Вывод на экран отдельной ячейки
+    /// </summary>
+    /// <param name="ss">поток ввода</param>
+    /// <param name="value">текст</param>
+    /// <param name="width">Ширина ячейки</param>
+    /// <param name="active">Активна ли ячейка</param>
+    void addCell(
+        std::ostringstream& ss,
+        const std::string& value,
+        size_t width,
+        bool active)
+    {
+        if (active)
+            ss << "\033[30;47m";
+
+        ss << " "
+            << padRight(value, width)
+            << " ";
+
+        if (active)
+            ss << "\033[0m";
+
+        ss << "|";
+    }
+
+    std::string header(int num_width, StudentDB& data)
+    {
+        std::ostringstream ss;
+        ss << " "; // Без этого шапка сьезжает на 1 символ влево
+        for(int i = 0; i < data.INFO_COL_COUNT; i++){
+            addCell(
+                ss,
+                data.HEADER[i],
+                data.getWidthVec()[i],
+                false
+            );
+        }
+        ss << '\n';
+        return ss.str();
+    }
+}
 
 namespace UI {
     size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
