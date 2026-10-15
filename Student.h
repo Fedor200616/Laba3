@@ -44,6 +44,8 @@ public:
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
     std::vector<StudentInfo> getInfoVec() const;
+    std::vector<size_t> getFilterHit(size_t col, std::string str) const;
+
     // Геттеры информации о базе
     size_t size() const { return info.size(); }
     bool empty() const { return info.empty(); }
@@ -54,5 +56,6 @@ public:
     void setField(size_t row, Inf col, std::string str = "");
     void removeRow(size_t row);
     void insertRow(size_t row = -1);
+    void editAllFind(size_t col, std::string str, std::string new_str);
 
 };

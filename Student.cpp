@@ -20,6 +20,17 @@ static Inf sizeToInf(size_t col) {
     }
 }
 
+static bool search_field(const std::string& data, const std::string& search) {
+    if (search.size() > data.size()) {
+        return 0;
+    }
+    for (int i = 0; i < search.size(); i++) {
+        if (!(search[i] == data[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 void DataBase::load(const std::vector<StudentInfo>& loaded_data) {
     info = loaded_data;
@@ -57,6 +68,16 @@ std::string DataBase::getField(size_t row, size_t col) const {
 
 std::vector<StudentInfo> DataBase::getInfoVec() const {
     return info;
+}
+
+std::vector<size_t> DataBase::getFilterHit(size_t col, std::string str) const {
+    std::vector<size_t> filtered = {};
+    for (size_t i = 0; i < size(); i++) {
+        if (search_field(getField(i, col), str)) {
+            filtered.push_back(i);
+        }
+    }
+    return filtered;
 }
 
 void DataBase::updateNum() {
@@ -102,4 +123,11 @@ void DataBase::insertRow(size_t row) {
 
     info.insert(info.begin() + row, StudentInfo{ 0, "", "", "", "" });
     updateNum();
+}
+
+void DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
+    std::vector<size_t> filt_row_arr = getFilterHit(col, str); //Массив индексов подпадающих под поиск
+    for (int i = 0; i < filt_row_arr.size(); i++) {
+        setField(filt_row_arr[i], col, new_str);
+    }
 }
