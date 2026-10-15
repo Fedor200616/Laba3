@@ -53,6 +53,12 @@ void Application::run() {
             current_state = edit_field.menuShow();
             break;
         }
+        case StateType::EditAllField: {
+            LOG_INFO("Изменение или поиск всех полей");
+            EditAllField edit_all(students_info, db_act_pos);
+            current_state = edit_all.menuShow();
+            break;
+        }
         case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";

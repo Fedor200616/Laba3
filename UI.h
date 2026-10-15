@@ -180,33 +180,23 @@ private:
 };
 
 
-
 class EditAllField : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
+public:
+    EditAllField(DataBase& d, Position& p);
 protected:
     DataBase& data;
     Position& pos;
 
+    size_t field_int;
     std::string field;
     std::string old_str;
     std::string new_str = "";
     size_t match = 0; //совпадения поиска
 
+    bool typing = false;
+    std::string* target = nullptr;   // какую строку сейчас набираем
     input::TextInput input_line;
+
     void startInput(); // Функция печати для поиска
     void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
-
-    EditAllField(DataBase& d, Position& p) : data(d), pos(p) {
-        field = data.HEADER[pos.col + 1];
-        old_str = data.getField(pos.row, pos.col);
-
-        using S = StateType;
-        menu_out.menu = {
-            {.name = "Поле:", .param = [this]() {return field; }, .act_aft = [this]() {changeField(); }},
-            {.name = "Найти:", .param = [this]() {return old_str; }, .act_aft = [this]() { startInput(); }},
-            {.name = "Заменить на:", .param = [this]() {return new_str; }, .act_aft = [this]() { startInput(); }},
-            {.name = "Найдено совпадений:", .param = [this]() {return std::to_string(match); } },
-            {.name = "Заменить", .act_aft = [this]() {}} // Мы не изменяем стейт, смена в наследнике, если нужно
-        };
-        menu_out.post_show = "";
-    }
 };

@@ -81,7 +81,6 @@ namespace UI {
                 false
             );
         }
-        ss << '\n';
         return ss.str();
     }
 }
@@ -142,14 +141,16 @@ std::string MenuLogic::showUI() {
 
     std::ostringstream ss;
 	ss << "\033[0m"; // Сброс цвета и стиля
-    ss << menu_out.before_show; //Отображение шапки
+    ss << menu_out.before_show << '\n'; //Отображение шапки
 
     for (size_t i = 0; i < menu_out.total.row; i++) {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
             ss << menu_out.menu[i].name;
-            if (menu_out.menu[i].param) ss << ' ' << menu_out.menu[i].param();
-            else ss << "\033[K\n";
+            if 
+                (menu_out.menu[i].param) ss << ' ' << menu_out.menu[i].param() << '\n';
+            else 
+                ss << "\033[K\n";
         }
     }
     ss << "\033[0m";
@@ -288,7 +289,7 @@ std::string Viewer::createString(size_t row)
             act
         );
     }
-    ss << "\033[K\n";   // вместо ss << '\n'
+    ss << "\033[K"; // Возвращаем форматирование
 
     return ss.str();
 }
@@ -466,6 +467,7 @@ void EditMenu::addStr(AddType type) {
 }
 
 //=======================EditField=======================
+
 EditField::EditField(DataBase& db, Position& p) : data(db), pos(p) {
     LOG_INFO("Запуск конструктора EditField");
 
@@ -511,3 +513,62 @@ StateType EditField::handleNav() {
         return StateType::NONE;
     }
 }
+
+//======================EditAllField============================
+
+EditAllField::EditAllField(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
+    field = data.HEADER[field_int];
+    old_str = data.getField(pos.row, field_int);
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Поле: ", .param = [this]() {return field; }, .act_aft = [this]() {changeField(); }},
+        {.name = "Найти: ", .param = [this]() {return old_str; }, .act_aft = [this]() { startInput(); }},
+        {.name = "Заменить на: ", .param = [this]() {return new_str; }, .act_aft = [this]() { startInput(); }},
+        {.name = "Найдено совпадений: ", .param = [this]() {return std::to_string(match); }, .enter = false },
+        {.name = "Заменить ", .act_aft = [this]() {}} // Добавить функцию замены
+    };
+    menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
+    menu_out.before_state = StateType::Viewer;
+}
+
+void EditAllField::startInput() {
+    if (typing) {
+        LOG_WARN("Вызов функции начала ввода, хотя ввод уже производится");
+        return;
+    }
+    size_t field_pos = menu_out.act.row;
+
+    if (field_pos == 1) {
+        target = &old_str;
+    }
+    else if (field_pos == 2) {
+        target = &new_str;
+    }
+    else {
+        return;
+    }
+    input_line.start(
+        *target, 
+        data.getWidthVec()[field_int]
+    );
+    menu_out.menu[field_pos].param = [this]() {return input_line.display(); };
+    typing = true;
+    system("cls"); //Возможно наложение текста
+}
+
+void EditAllField::changeField() {
+    if (pos.col + 1 < data.INFO_COL_COUNT - 1) {
+        ++pos.col;
+    }
+    else {
+        pos.col = 0;
+    }
+
+    field_int = pos.col + 1;
+    field = data.HEADER[field_int];
+    old_str = data.getField(pos.row, field_int);
+    system("cls"); //Происходит наложение текста
+}
+
+
