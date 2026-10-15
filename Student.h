@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "Log.h"
 
 // Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
@@ -19,16 +20,16 @@ enum class Inf {
     num
 };
 
-class StudentDB { //Следует сменить на просто DataBase
+class DataBase { //Следует сменить на просто DataBase
 private:
     std::vector<StudentInfo> info;
 public:
     //Константы
-    const int NAME_WIDTH = 20;
-    const int GROUP_WIDTH = 12;
-    const int PASS_WIDTH = 20;
-    const int DIGIT_WIDTH = 5;
-    const int INFO_COL_COUNT = 5;
+    const int NAME_WIDTH = 20; // Длина поля имени
+    const int GROUP_WIDTH = 12; // длина поля группы
+    const int PASS_WIDTH = 20; // длина поля пароля
+    const int DIGIT_WIDTH = 5; // Длина поля номера в группе
+    const int INFO_COL_COUNT = 5; // Количество полей в таблице
     const std::vector<std::string> HEADER = {
         "#", "Имя", "Группа", "Пароль", "Номер"
     };
@@ -43,11 +44,15 @@ public:
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
     std::vector<StudentInfo> getInfoVec() const;
-
-    //Изменение данных
-
-
     // Геттеры информации о базе
     size_t size() const { return info.size(); }
     bool empty() const { return info.empty(); }
+
+    //Изменение данных
+    void updateNum();
+    void setField(size_t row, size_t col, std::string str = "");
+    void setField(size_t row, Inf col, std::string str = "");
+    void removeRow(size_t row);
+    void insertRow(size_t row = -1);
+
 };
