@@ -208,6 +208,7 @@ StateType MenuLogic::handleNav() {
         return menu_out.before_state;
     case MenuNav::Enter: {
         LOG_INFO("Пользователь нажал Enter.");
+        system("cls"); //Иначе текст наславиается
         auto& item = menu_out.menu[menu_out.act.row];
         if (item.act_aft) item.act_aft();
         return item.state_aft;
@@ -229,7 +230,7 @@ StateType MenuLogic::handleNav() {
 Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
-    menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT); // Общее количество колонок в меню
+    menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT - 1); // Общее количество колонок в меню
     menu_out.act = db_act; // Начальная активная позиция
 
     size_t max_rows = menu_out.total.row;
@@ -305,8 +306,6 @@ bool Viewer::beforeShow() {
 
     menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
     
-    static size_t first_row = 0; // изначально задаем 0
-
     //делаем прокрутку через отображение некотороых пунктов
 	if (menu_out.act.row < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
         first_row = 0;
@@ -518,18 +517,30 @@ StateType EditField::handleNav() {
 
 EditAllField::EditAllField(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
-    old_str = data.getField(pos.row, field_int);
+    find_str = data.getField(pos.row, field_int);
+    repl_str = find_str;
+    
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Поле: ", .param = [this]() {return field; }, .act_aft = [this]() {changeField(); }},
-        {.name = "Найти: ", .param = [this]() {return old_str; }, .act_aft = [this]() { startInput(); }},
-        {.name = "Заменить на: ", .param = [this]() {return new_str; }, .act_aft = [this]() { startInput(); }},
-        {.name = "Найдено совпадений: ", .param = [this]() {return std::to_string(match); }, .enter = false },
-        {.name = "Заменить ", .act_aft = [this]() {}} // Добавить функцию замены
+        {.name = "Поле: ", .param = [this]() {return line(0, field); }, .act_aft = [this]() {changeField(); }},
+        {.name = "Найти: ", .param = [this]() {return line(1, find_str); }, .act_aft = [this]() { startInput(); }},
+        {.name = "Заменить на: ", .param = [this]() {return line(2, repl_str); }, .act_aft = [this]() { startInput(); }},
+        {.name = "Найдено совпадений: ", .param = [this]() {return std::to_string(match()); }, .enter = false },
+        {.name = "Заменить ", .act_aft = [this]() {data.editAllFind(field_int, find_str, repl_str); }} // Добавить функцию замены
     };
     menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
     menu_out.before_state = StateType::Viewer;
+}
+
+size_t EditAllField::match() const {
+    std::string rt_find = (typing && menu_out.act.row == 1) ? input_line.text() : find_str;
+    return data.getFilterHit(field_int, rt_find).size(); 
+}
+
+std::string EditAllField::line(size_t item, const std::string& value) const {
+    bool editing = typing && menu_out.act.row == item;
+    return (editing ? input_line.display() : value) + "\033[K";
 }
 
 void EditAllField::startInput() {
@@ -540,10 +551,10 @@ void EditAllField::startInput() {
     size_t field_pos = menu_out.act.row;
 
     if (field_pos == 1) {
-        target = &old_str;
+        target = &find_str;
     }
     else if (field_pos == 2) {
-        target = &new_str;
+        target = &repl_str;
     }
     else {
         return;
@@ -552,7 +563,6 @@ void EditAllField::startInput() {
         *target, 
         data.getWidthVec()[field_int]
     );
-    menu_out.menu[field_pos].param = [this]() {return input_line.display(); };
     typing = true;
     system("cls"); //Возможно наложение текста
 }
@@ -567,8 +577,34 @@ void EditAllField::changeField() {
 
     field_int = pos.col + 1;
     field = data.HEADER[field_int];
-    old_str = data.getField(pos.row, field_int);
+    //find_str = data.getField(pos.row, field_int);
     system("cls"); //Происходит наложение текста
 }
 
+bool EditAllField::beforeShow() {
+    if (typing)
+        menu_out.ActMark = "\033[0m";
+    else 
+        menu_out.ActMark = "\033[30;47m";
+    return MenuLogic::beforeShow();
+}
 
+StateType EditAllField::handleNav() {
+    if (!typing) return MenuLogic::handleNav();      // обычная навигация по пунктам
+
+    switch (input_line.handle(input::readKeyEvent())) {
+    case input::TextInput::Result::Accepted:
+        *target = input_line.text();
+        typing = false;
+        target = nullptr;
+
+        break;
+    case input::TextInput::Result::Cancelled:        // Esc отменяет только ввод, из меню не выходит
+        typing = false;
+        target = nullptr;
+        break;
+    default:
+        break;
+    }
+    return StateType::NONE;
+}

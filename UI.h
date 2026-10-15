@@ -122,6 +122,8 @@ private:
 
     int num_width = 0;
     int menu_width = 0;
+
+    size_t first_row = 0;
 public:
     Viewer(DataBase& students, Position db_act);
 
@@ -189,9 +191,10 @@ protected:
 
     size_t field_int;
     std::string field;
-    std::string old_str;
-    std::string new_str = "";
-    size_t match = 0; //совпадения поиска
+    std::string find_str;
+    std::string repl_str = "";
+    size_t match() const; //совпадения поиска
+    std::string line(size_t item, const std::string& value) const;
 
     bool typing = false;
     std::string* target = nullptr;   // какую строку сейчас набираем
@@ -199,4 +202,7 @@ protected:
 
     void startInput(); // Функция печати для поиска
     void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
+
+    bool beforeShow() override;
+    StateType handleNav() override;
 };
