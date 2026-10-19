@@ -27,7 +27,7 @@ namespace validate {
     inline bool isCyrLower(wchar_t c);
     inline bool isCyrUpper(wchar_t c);
     inline bool isDigit(wchar_t c);
-    inline bool isPunct(wchar_t c);
+    inline bool isPunct(unsigned char c);
 
     // Проверка полей
     bool name(const std::string& s);
@@ -39,7 +39,8 @@ namespace validate {
     bool check(Inf field, const std::string& s);
 }
 
-
+size_t infToSize(Inf inf);
+Inf sizeToInf(size_t col);
 
 class DataBase { //Следует сменить на просто DataBase
 private:
@@ -73,10 +74,11 @@ public:
 
     //Изменение данных
     void updateNum();
-    void setField(size_t row, size_t col, std::string str = "");
-    void setField(size_t row, Inf col, std::string str = "");
     void removeRow(size_t row);
     void insertRow(size_t row = -1);
-    void editAllFind(size_t col, std::string str, std::string new_str);
+
+    bool setField(size_t row, size_t col, std::string str = "");
+    bool setField(size_t row, Inf col, std::string str = "");
+    bool editAllFind(size_t col, std::string str, std::string new_str);
 
 };

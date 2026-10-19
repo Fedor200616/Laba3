@@ -2,7 +2,8 @@
 #include "Input.h"
 #include <cstdint>
 #include <string>
-static size_t infToSize(Inf inf) {
+#include <cctype>
+size_t infToSize(Inf inf) {
     switch (inf) {
     case Inf::row: return 0;
     case Inf::name: return 1;
@@ -13,7 +14,7 @@ static size_t infToSize(Inf inf) {
     default: return -1;
     }
 }
-static Inf sizeToInf(size_t col) {
+Inf sizeToInf(size_t col) {
     switch (col) {
     case 1: return Inf::name;
     case 2: return Inf::group;
@@ -92,9 +93,8 @@ namespace validate {
     }
 
     // Проверка специального знака ASCII
-    inline bool isPunct(wchar_t c) {
-        return (c >= 33 && c <= 47) || (c >= 58 && c <= 64) ||
-            (c >= 91 && c <= 96) || (c >= 123 && c <= 126);
+    inline bool isPunct(unsigned char c) {
+        return std::ispunct(static_cast<unsigned char>(c));
     }
 
     
@@ -186,17 +186,20 @@ namespace validate {
     }
 
     bool check(Inf field, const std::string& s) { // Проверка по типу поля
+        if (s.empty()) {
+            return true;
+        }
         switch (field) {
         case Inf::name:  return name(s);
         case Inf::group: return group(s);
         case Inf::num:   return groupNum(s);
         case Inf::pass:  return password(s);
-        default:         return true;
+        default:         
+            LOG_ERROR("Неизвестный тип поля");
+            return false;
         }
     }
 }
-
-
 
 void DataBase::load(const std::vector<StudentInfo>& loaded_data) {
     info = loaded_data;
@@ -252,22 +255,54 @@ void DataBase::updateNum() {
     }
 }
 
-void DataBase::setField(size_t row, Inf col, std::string str) {
+/// <summary>
+/// Сеттер ввода в поле
+/// </summary>
+/// <param name="row">индекс строки поля</param>
+/// <param name="col">тип колонки ввода</param>
+/// <param name="str">вводимая строка</param>
+/// <returns>0 если ввод неверен, 1 - если верно</returns>
+bool DataBase::setField(size_t row, Inf col, std::string str) {
     LOG_INFO("Поле изменено: строка " + std::to_string(row) +
         " колонка " + std::to_string(infToSize(col)) +
         " старое поле " + getField(row, col) +
         " новое поле " + str);
-    if (row >= info.size()) return ;
-    switch (col) {
-    case Inf::name: info[row].name = str; break;
-    case Inf::group: info[row].group = str; break;
-    case Inf::pass: info[row].pass = str; break;
-    case Inf::num: info[row].num = str; break;
-    default: return;
+    if (row >= info.size()) {
+        LOG_ERROR("Выход за границы массива базы данных");
+        return 0;
     }
+    if (!validate::check(col, str)) {
+        LOG_ERROR("Неверные символы в поле, поле: " + str);
+        return 0;
+    }
+    switch (col) {
+    case Inf::name: 
+        info[row].name = str;
+        break;
+    case Inf::group:
+        info[row].group = str; 
+        break;
+    case Inf::pass: 
+        info[row].pass = str; 
+        break;
+    case Inf::num: 
+        info[row].num = str; 
+        break;
+    default: 
+        LOG_ERROR("Ошбика ввода, неизвестный тип колонки.");
+        return 0;
+    }
+    return 1;
 }
-void DataBase::setField(size_t row, size_t col, std::string str) {
-    setField(row, sizeToInf(col), str);
+/// <summary>
+/// Сеттер ввода в поле
+/// </summary>
+/// <param name="row">индекс строки поля</param>
+/// <param name="col">тип колонки ввода</param>
+/// <param name="str">вводимая строка</param>
+/// <returns>0 если ввод неверен, 1 - если верно</returns>
+bool DataBase::setField(size_t row, size_t col, std::string str) {
+    return setField(row, sizeToInf(col), str);
 }
 
 void DataBase::removeRow(size_t row) {
@@ -291,9 +326,21 @@ void DataBase::insertRow(size_t row) {
     updateNum();
 }
 
-void DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
+/// <summary>
+/// Функция изменения всех строк по поиску
+/// </summary>
+/// <param name="col">колонка для изменения</param>
+/// <param name="str">строка поиска</param>
+/// <param name="new_str">новая строка</param>
+/// <returns>0 если ввод неверен, 1 - если верно</returns>
+bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
+    if (validate::check(sizeToInf(col), str)) {
+        LOG_ERROR("Неверные символы в поле, поле: " + str);
+        return 0;
+    }
     std::vector<size_t> filt_row_arr = getFilterHit(col, str); //Массив индексов подпадающих под поиск
     for (int i = 0; i < filt_row_arr.size(); i++) {
         setField(filt_row_arr[i], col, new_str);
     }
+    return 1;
 }

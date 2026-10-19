@@ -53,9 +53,9 @@ void Application::run() {
             current_state = edit_field.menuShow();
             break;
         }
-        case StateType::EditAllField: {
+        case StateType::EditMenuLogic: {
             LOG_INFO("Изменение или поиск всех полей");
-            EditAllField edit_all(students_info, db_act_pos);
+            EditMenuLogic edit_all(students_info, db_act_pos);
             current_state = edit_all.menuShow();
             break;
         }
