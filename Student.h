@@ -20,6 +20,27 @@ enum class Inf {
     num
 };
 
+namespace validate {
+    // Проверка символов
+    inline bool isLatinLower(wchar_t c);
+    inline bool isLatinUpper(wchar_t c);
+    inline bool isCyrLower(wchar_t c);
+    inline bool isCyrUpper(wchar_t c);
+    inline bool isDigit(wchar_t c);
+    inline bool isPunct(wchar_t c);
+
+    // Проверка полей
+    bool name(const std::string& s);
+    bool group(const std::string& s);
+    bool groupNum(const std::string& s);
+    bool password(const std::string& s);
+
+    // Проверка поля по его типу
+    bool check(Inf field, const std::string& s);
+}
+
+
+
 class DataBase { //Следует сменить на просто DataBase
 private:
     std::vector<StudentInfo> info;

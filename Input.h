@@ -1,6 +1,14 @@
 #pragma once
 #include <string>
 
+
+namespace Encoding {
+    std::string toUtf8(const std::wstring& w);
+
+    std::wstring fromUtf8(const std::string& s);
+}
+
+
 namespace input {
 
     enum class key {
@@ -51,5 +59,4 @@ namespace input {
         size_t pos = 0;        // позиция курсора в буфере (0 = перед первым символом)
         size_t max_len = 0;    // максимальная длина текста в символах
     };
-
 }

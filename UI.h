@@ -107,7 +107,7 @@ protected:
     MenuNav GetAction(input::key key_code) const;
 
     virtual bool beforeShow(); //Функция действия перед показом меню
-    std::string showUI(); // Функция показа меню
+    std::string showUI(); // Функция формирования строки на вывод
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
     bool windowSize() const {

@@ -1,4 +1,7 @@
 #include "Student.h"
+#include "Input.h"
+#include <cstdint>
+#include <string>
 static size_t infToSize(Inf inf) {
     switch (inf) {
     case Inf::row: return 0;
@@ -31,6 +34,169 @@ static bool search_field(const std::string& data, const std::string& search) {
     }
     return 1;
 }
+
+
+
+namespace validate {
+    using namespace Encoding;
+    namespace {
+        // Допустимые символы
+        constexpr wchar_t LATIN_LO = L'a', LATIN_HI = L'z';
+        constexpr wchar_t LATIN_CAP_LO = L'A', LATIN_CAP_HI = L'Z';
+        constexpr wchar_t CYR_LO = 0x0430, CYR_HI = 0x044F;
+        constexpr wchar_t CYR_CAP_LO = 0x0410, CYR_CAP_HI = 0x042F;
+        constexpr wchar_t YO = 0x0451, YO_CAP = 0x0401;
+        constexpr wchar_t DIGIT_LO = L'0', DIGIT_HI = L'9';
+
+        constexpr std::size_t PASS_MIN = 8;
+        constexpr std::size_t PASS_MAX = 20;
+
+        // Проверка правильности UTF-8
+        bool validUtf8(const std::string& s) {
+            return toUtf8(fromUtf8(s)) == s;
+        }
+
+        // Проверка любой латинской или русской буквы
+        bool isLetter(wchar_t c) {
+            return isLatinLower(c) || isLatinUpper(c) ||
+                isCyrLower(c) || isCyrUpper(c);
+        }
+
+    }
+
+    // ---------------- Проверка символов ----------------
+
+    // Проверка маленькой латинской буквы
+    inline bool isLatinLower(wchar_t c) {
+        return c >= LATIN_LO && c <= LATIN_HI;
+    }
+
+    // Проверка заглавной латинской буквы
+    inline bool isLatinUpper(wchar_t c) {
+        return c >= LATIN_CAP_LO && c <= LATIN_CAP_HI;
+    }
+
+    // Проверка маленькой русской буквы
+    inline bool isCyrLower(wchar_t c) {
+        return (c >= CYR_LO && c <= CYR_HI) || c == YO;
+    }
+
+    // Проверка заглавной русской буквы
+    inline bool isCyrUpper(wchar_t c) {
+        return (c >= CYR_CAP_LO && c <= CYR_CAP_HI) || c == YO_CAP;
+    }
+
+    // Проверка цифры
+    inline bool isDigit(wchar_t c) {
+        return c >= DIGIT_LO && c <= DIGIT_HI;
+    }
+
+    // Проверка специального знака ASCII
+    inline bool isPunct(wchar_t c) {
+        return (c >= 33 && c <= 47) || (c >= 58 && c <= 64) ||
+            (c >= 91 && c <= 96) || (c >= 123 && c <= 126);
+    }
+
+    
+    bool name(const std::string& s) { //Проверка фамилии
+        if (s == "0") return true; // Выход в меню
+
+        if (!validUtf8(s)) return false;
+        std::wstring w = fromUtf8(s);
+
+        if (w.empty() || !isLatinUpper(w[0]) && !isCyrUpper(w[0]))
+            return false;
+
+        // После первой буквы разрешены маленькие буквы и знаки -, _, '
+        for (std::size_t i = 1; i < w.size(); ++i) {
+            wchar_t c = w[i];
+
+            if (!(isLatinLower(c) || isCyrLower(c) ||
+                c == L'-' || c == L'_' || c == L'\''))
+                return false;
+        }
+
+        return true;
+    }
+
+    bool group(const std::string& s) { // Проверка группы
+        if (s == "_" || s == "0") return true; // Пустое поле или выход
+
+        if (!validUtf8(s)) return false;
+        std::wstring w = fromUtf8(s);
+
+        if (w.empty()) return false;
+
+        // Разрешены буквы, цифры, дефис и подчёркивание
+        for (wchar_t c : w) {
+            if (!(isLetter(c) || isDigit(c) ||
+                c == L'-' || c == L'_'))
+                return false;
+        }
+
+        return true;
+    }
+
+    bool groupNum(const std::string& s) { // Проверка номера ученика
+        if (s == "_" || s == "0") return true; // Пустое поле или выход
+
+        if (!validUtf8(s)) return false;
+        std::wstring w = fromUtf8(s);
+
+        if (w.empty() || w[0] == L'-') return false;
+
+        // Номер должен состоять только из цифр
+        for (wchar_t c : w) {
+            if (!isDigit(c)) return false;
+        }
+
+        return true;
+    }
+
+    bool password(const std::string& s) { // Проверка пароля
+        if (s == "0") return true; // Выход в меню
+
+        if (!validUtf8(s)) return false;
+        std::wstring w = fromUtf8(s);
+
+        // Проверка длины пароля
+        if (w.size() < PASS_MIN || w.size() >= PASS_MAX)
+            return false;
+
+        bool capital = false;
+        bool lower = false;
+        bool digit = false;
+        bool special = false;
+
+        // Проверка состава пароля
+        for (wchar_t c : w) {
+            if (isLatinUpper(c))
+                capital = true;
+            else if (isLatinLower(c))
+                lower = true;
+            else if (isDigit(c))
+                digit = true;
+            else if (isPunct(c))
+                special = true;
+            else
+                return false; // Русские буквы, пробелы и другие символы
+        }
+
+        return capital && lower && digit && special;
+    }
+
+    bool check(Inf field, const std::string& s) { // Проверка по типу поля
+        switch (field) {
+        case Inf::name:  return name(s);
+        case Inf::group: return group(s);
+        case Inf::num:   return groupNum(s);
+        case Inf::pass:  return password(s);
+        default:         return true;
+        }
+    }
+}
+
+
 
 void DataBase::load(const std::vector<StudentInfo>& loaded_data) {
     info = loaded_data;
