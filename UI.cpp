@@ -532,7 +532,6 @@ EditMenuLogic::EditMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_
         {.name = "Заменить ", .act_aft = [this]() {editAll(); }} // Добавить функцию замены
     };
     menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
-    menu_out.before_state = StateType::Viewer;
 }
 
 size_t EditMenuLogic::match() const {
@@ -617,4 +616,12 @@ StateType EditMenuLogic::handleNav() {
         break;
     }
     return StateType::NONE;
+}
+
+
+ReplaceMenu::ReplaceMenu(DataBase& d, Position& p) : EditMenuLogic(d, p){
+    menu_out.menu[0].enter = false;
+    menu_out.menu[1].enter = false;
+    menu_out.act_pos.row = 2;
+    menu_out.before_state = StateType::Viewer;
 }
