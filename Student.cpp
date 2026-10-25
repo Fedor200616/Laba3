@@ -365,7 +365,7 @@ bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
 }
 
 void DataBase::changeFilter() {
-    show_filtered != show_filtered;
+    show_filtered = !show_filtered;
 }
 
 void DataBase::changeFilter(size_t col, std::string str, bool b) {
