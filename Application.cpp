@@ -54,10 +54,10 @@ void Application::run() {
             current_state = edit_field.menuShow();
             break;
         }
-        case StateType::FindMenuLogic: { // ВРЕМЕННО, класс поиска и замены полей
+        case StateType::ReplaceAll: { // ВРЕМЕННО, класс поиска и замены полей
             LOG_INFO("Изменение или поиск всех полей");
-            FindMenuLogic edit_all(students_info, db_act_pos);
-            current_state = edit_all.menuShow();
+            ReplaceMenu menu(students_info, db_act_pos, StateType::Viewer);
+            current_state = menu.menuShow();
             break;
         }
         case StateType::_ERROR:

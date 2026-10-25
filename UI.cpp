@@ -271,7 +271,7 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
 
     menu_out.ActMark = "";
     menu_out.InactMark = "";
-    
+    menu_out.before_state = StateType::MainMenu;
 };
 
 std::string Viewer::createString(size_t row)
@@ -325,6 +325,33 @@ bool Viewer::beforeShow() {
     return true;
 }
 
+StateType Viewer::handleNav() {
+    if (menu_out.tab_ent) {
+        return StateType::ViewerTab;
+    }
+    else {
+        return MenuLogic::handleNav();
+    }
+}
+
+//=======================Viewer=======================
+ViewerTab::ViewerTab() {
+    LOG_INFO("Запуск конструктора ViewerTab");
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Найти поле", .state_aft = S::ANYKEY},
+        {.name = "Фильтр строк", .state_aft = S::ANYKEY},
+        {.name = "Очистить фильтр", .act_aft = []() {return 0; }},
+    };
+    menu_out.before_show = "Выберите действие с просмотром данных";
+    menu_out.post_show = "\n"
+        "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
+        "Нажмите Tab для возврата к просмотру данных, ESC для возврата в главное меню";
+    menu_out.total.row = menu_out.menu.size();
+
+}
+
 //=======================EditMenu=======================
 
 EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
@@ -332,13 +359,13 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
     is_mod = false;
 
     using S = StateType;
-    if (data.size() < 1) addStr(AddType::End);
+    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
     menu_out.menu = {
         // Item::Row: строка студента, не выбирается
         {.param = [this]() { return createString(); }, .enter = false },
 
         {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
-        {.name = "Заменить все поля с данным именем", .state_aft = S::FindMenuLogic},  // после основного меню: то же меню, только с введённым полем
+        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  // после основного меню: то же меню, только с введённым полем
         {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
         {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
         {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
@@ -379,6 +406,7 @@ std::string EditMenu::createString()
 
 bool EditMenu::beforeShow() {
 	bool res = MenuLogic::beforeShow();
+    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
 	if (data.empty()) {
 		LOG_ERROR("В файле данных о студентах нет записи");
 		std::cout << "Нет данных для отображения.\n";
@@ -390,7 +418,7 @@ bool EditMenu::beforeShow() {
             "Выберите поле в таблице.\n"
             "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
             "Нажмите ESC для возврата в меню просмотра";
-		menu_out.act.row = -1; // Прикооол, оно вообще то unsinged, но пока работает)))
+		menu_out.act.row = -1; // Прикооол, оно unsigned, но подразумевается что это такое большое число, что оно точно не будет пунктом меню
     }
     else {
         pos.col = menu_out.act.col;
@@ -518,7 +546,7 @@ StateType EditField::handleNav() {
 
 //======================FindMenuLogic============================
 
-FindMenuLogic::FindMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
+FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, StateType before_state) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
@@ -532,6 +560,7 @@ FindMenuLogic::FindMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_
         {.name = "Заменить ", .act_aft = [this]() {editAll(); }} // Добавить функцию замены
     };
     menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
+    menu_out.before_state = before_state;
 }
 
 size_t FindMenuLogic::match() const {
@@ -606,7 +635,6 @@ StateType FindMenuLogic::handleNav() {
         *target = input_line.text();
         typing = false;
         target = nullptr;
-
         break;
     case input::TextInput::Result::Cancelled:        // Esc отменяет только ввод, из меню не выходит
         typing = false;
@@ -618,10 +646,10 @@ StateType FindMenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//==========================ReplaceMenu================================
 
-ReplaceMenu::ReplaceMenu(DataBase& d, Position& p) : FindMenuLogic(d, p){
+ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s){
     menu_out.menu[0].enter = false;
     menu_out.menu[1].enter = false;
     menu_out.act.row = 2;
-    menu_out.before_state = StateType::Viewer;
 }

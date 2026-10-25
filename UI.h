@@ -177,9 +177,16 @@ private:
     void updateMenu();
 
     bool beforeShow() override;
+    StateType handleNav() override;
 
     const unsigned int MENU_SHOW_LENGTH = 20;
 	const int MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
+};
+
+class ViewerTab : public MenuLogic {
+public:
+    ViewerTab();
+private:
 };
 
 class EditMenu : public MenuLogic {
@@ -223,7 +230,7 @@ private:
 
 class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
-    FindMenuLogic(DataBase& d, Position& p);
+    FindMenuLogic(DataBase& d, Position& p, StateType before_state);
 protected:
     DataBase& data;
     Position& pos;
@@ -249,5 +256,5 @@ protected:
 
 class ReplaceMenu : public FindMenuLogic {
 public:
-    ReplaceMenu(DataBase& d, Position& p);
+    ReplaceMenu(DataBase& d, Position& p, StateType before_state);
 };

@@ -9,6 +9,21 @@ namespace {
         size_t last = str.find_last_not_of(" \t\r\n");
         return str.substr(first, (last - first + 1));
     }
+    // Удаление UTF-8 BOM, если он есть
+    inline void stripBom(std::string& s) {
+        if (s.size() >= 3 &&
+            (unsigned char)s[0] == 0xEF &&
+            (unsigned char)s[1] == 0xBB &&
+            (unsigned char)s[2] == 0xBF) {
+            s.erase(0, 3);
+        }
+    }
+    inline bool isHeader(const StudentInfo& r) {
+        return r.name == "Имя" &&
+            r.group == "Группа" &&
+            r.num == "Номер" &&
+            r.pass == "Пароль";
+    }
 }
 
 // Функция копирования строк фаайла в контейнер строки базы данных
@@ -60,6 +75,8 @@ std::vector<StudentInfo> File::loadFromFile() {
 	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
     bool sep_change = 0; // Флаг смены разделителя, если 1 раз сменился, то не , и не | , то ошибка
     bool is_norm = 0; // Флаг распознания шапки таблицы
+    bool first_line = true; // флаг первой строки
+    bool header_found = false; // Флаг нахождения заголовка
     if (filePath.empty() || !fs::exists(filePath)) {
         LOG_ERROR("Файл не существует или не найден: " + pathToUtf8(filePath));
         type = fileType::ERR;
@@ -81,39 +98,43 @@ std::vector<StudentInfo> File::loadFromFile() {
     char separator = '|';
 
     while (std::getline(ifile, str_buf)) {
+        if (first_line) {
+            stripBom(str_buf);
+            first_line = false;
+        }
+
         if (trim(str_buf).empty())
             continue;
 
-        StudentInfo res_buf = copyFromString(str_buf, i, separator); // построчечно сохраняем данные в массив
+        // Первая непустая строка: определяем разделитель по шапке
+        if (!header_found) {
+            const char separators[] = { '|', ',' };
+            bool ok = false;
 
-        if (i == 0) {
-            LOG_INFO("Попытка анализа с разделителем |");
-            is_norm =
-                res_buf.name == "Имя" &&
-                res_buf.group == "Группа" &&
-                res_buf.num == "Номер" &&
-                res_buf.pass == "Пароль";
-            
-            // Если с | заголовок не распознан, пробуем запятую
-            if (!is_norm) {
-                separator = ',';
-                if(sep_change){
-                    LOG_ERROR("Ошибка в шапке файла");
-                    type = fileType::ERR;
-                    return {};
-                }
-                else {
-                    sep_change = 1;
-                    LOG_INFO("Попытка анализа с разделителем ,");
-                    continue;
+            for (char sep : separators) {
+                LOG_INFO(std::string("Попытка анализа с разделителем ") + sep);
+                StudentInfo hdr = copyFromString(str_buf, 0, sep);
+                if (isHeader(hdr)) {
+                    separator = sep;
+                    ok = true;
+                    break;
                 }
             }
-            ++i;
-            continue; // Мы не записываем данные в вектор, шапка таблицы строится отдельно
+
+            if (!ok) {
+                LOG_ERROR("Ошибка в шапке файла");
+                type = fileType::ERR;
+                return {};
+            }
+
+            header_found = true;
+            i = 1;
+            continue; // шапку в вектор не записываем
         }
 
+        StudentInfo res_buf = copyFromString(str_buf, i, separator);
         res_buf.row = i;
-        result.push_back(res_buf); // перенос данных из буфера в вектор
+        result.push_back(res_buf);
         ++i;
     }
     LOG_INFO("Файл обработан");

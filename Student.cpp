@@ -311,6 +311,9 @@ void DataBase::removeRow(size_t row) {
         return;                 // пустая база или неверный индекс
     }
     LOG_INFO("Удаление строки: " + std::to_string(row) + ", фамилия: " + info[row].name);
+    if (size() <= 1) { // если после удаления база будет пустой
+        insertRow(1); // Дабвляем хотя бы одну строку
+    }
     info.erase(info.begin() + row);
     updateNum();
 }
@@ -334,7 +337,7 @@ void DataBase::insertRow(size_t row) {
 /// <param name="new_str">новая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
-    if (validate::check(sizeToInf(col), str)) {
+    if (!validate::check(sizeToInf(col), str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
         return 0;
     }
