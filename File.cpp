@@ -59,6 +59,7 @@ std::vector<StudentInfo> File::loadFromFile() {
     std::vector<StudentInfo> result;
 	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
     bool sep_change = 0; // Флаг смены разделителя, если 1 раз сменился, то не , и не | , то ошибка
+    bool is_norm = 0; // Флаг распознания шапки таблицы
     if (filePath.empty() || !fs::exists(filePath)) {
         LOG_ERROR("Файл не существует или не найден: " + pathToUtf8(filePath));
         type = fileType::ERR;
@@ -86,30 +87,33 @@ std::vector<StudentInfo> File::loadFromFile() {
         StudentInfo res_buf = copyFromString(str_buf, i, separator); // построчечно сохраняем данные в массив
 
         if (i == 0) {
-            bool is_norm =
+            LOG_INFO("Попытка анализа с разделителем |");
+            is_norm =
                 res_buf.name == "Имя" &&
                 res_buf.group == "Группа" &&
                 res_buf.num == "Номер" &&
                 res_buf.pass == "Пароль";
-
+            
             // Если с | заголовок не распознан, пробуем запятую
             if (!is_norm) {
                 separator = ',';
-                if(sep_ch){
+                if(sep_change){
                     LOG_ERROR("Ошибка в шапке файла");
                     type = fileType::ERR;
                     return {};
                 }
                 else {
-                    sep_ch = 1;
+                    sep_change = 1;
+                    LOG_INFO("Попытка анализа с разделителем ,");
                     continue;
                 }
             }
             ++i;
+            continue; // Мы не записываем данные в вектор, шапка таблицы строится отдельно
         }
 
         res_buf.row = i;
-        result.push_back(res_buf);
+        result.push_back(res_buf); // перенос данных из буфера в вектор
         ++i;
     }
     LOG_INFO("Файл обработан");

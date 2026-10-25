@@ -338,7 +338,7 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
         {.param = [this]() { return createString(); }, .enter = false },
 
         {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
-        {.name = "Заменить все поля с данным именем", .state_aft = S::EditMenuLogic},  // после основного меню: то же меню, только с введённым полем
+        {.name = "Заменить все поля с данным именем", .state_aft = S::FindMenuLogic},  // после основного меню: то же меню, только с введённым полем
         {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
         {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
         {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
@@ -516,9 +516,9 @@ StateType EditField::handleNav() {
     }
 }
 
-//======================EditMenuLogic============================
+//======================FindMenuLogic============================
 
-EditMenuLogic::EditMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
+FindMenuLogic::FindMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
@@ -534,17 +534,17 @@ EditMenuLogic::EditMenuLogic(DataBase& d, Position& p) : data(d), pos(p), field_
     menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
 }
 
-size_t EditMenuLogic::match() const {
+size_t FindMenuLogic::match() const {
     std::string rt_find = (typing && menu_out.act.row == 1) ? input_line.text() : find_str;
     return data.getFilterHit(field_int, rt_find).size(); 
 }
 
-std::string EditMenuLogic::line(size_t item, const std::string& value) const {
+std::string FindMenuLogic::line(size_t item, const std::string& value) const {
     bool editing = typing && menu_out.act.row == item;
     return (editing ? input_line.display() : value) + "\033[K";
 }
 
-void EditMenuLogic::startInput() {
+void FindMenuLogic::startInput() {
     if (typing) {
         LOG_WARN("Вызов функции начала ввода, хотя ввод уже производится");
         return;
@@ -568,7 +568,7 @@ void EditMenuLogic::startInput() {
     system("cls"); //Возможно наложение текста
 }
 
-void EditMenuLogic::changeField() {
+void FindMenuLogic::changeField() {
     if (pos.col + 1 < data.INFO_COL_COUNT - 1) {
         ++pos.col;
     }
@@ -581,7 +581,7 @@ void EditMenuLogic::changeField() {
     system("cls"); //Происходит наложение текста
 }
 
-void EditMenuLogic::editAll(){
+void FindMenuLogic::editAll(){
     if (!data.editAllFind(field_int, find_str, repl_str)) {
         NotVerMenu ver_menu(input_line.text(), pos.col + 1);
         ver_menu.menuShow();
@@ -590,7 +590,7 @@ void EditMenuLogic::editAll(){
         LOG_INFO("Поля изменены");
 }
 
-bool EditMenuLogic::beforeShow() {
+bool FindMenuLogic::beforeShow() {
     if (typing)
         menu_out.ActMark = "\033[0m";
     else 
@@ -598,7 +598,7 @@ bool EditMenuLogic::beforeShow() {
     return MenuLogic::beforeShow();
 }
 
-StateType EditMenuLogic::handleNav() {
+StateType FindMenuLogic::handleNav() {
     if (!typing) return MenuLogic::handleNav();      // обычная навигация по пунктам
 
     switch (input_line.handle(input::readKeyEvent())) {
@@ -619,9 +619,9 @@ StateType EditMenuLogic::handleNav() {
 }
 
 
-ReplaceMenu::ReplaceMenu(DataBase& d, Position& p) : EditMenuLogic(d, p){
+ReplaceMenu::ReplaceMenu(DataBase& d, Position& p) : FindMenuLogic(d, p){
     menu_out.menu[0].enter = false;
     menu_out.menu[1].enter = false;
-    menu_out.act_pos.row = 2;
+    menu_out.act.row = 2;
     menu_out.before_state = StateType::Viewer;
 }

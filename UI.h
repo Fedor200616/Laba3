@@ -221,9 +221,9 @@ private:
 };
 
 
-class EditMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
+class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
-    EditMenuLogic(DataBase& d, Position& p);
+    FindMenuLogic(DataBase& d, Position& p);
 protected:
     DataBase& data;
     Position& pos;
@@ -245,4 +245,9 @@ protected:
 
     bool beforeShow() override;
     StateType handleNav() override;
+};
+
+class ReplaceMenu : public FindMenuLogic {
+public:
+    ReplaceMenu(DataBase& d, Position& p);
 };
