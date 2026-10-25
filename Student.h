@@ -45,6 +45,9 @@ Inf sizeToInf(size_t col);
 class DataBase { //Следует сменить на просто DataBase
 private:
     std::vector<StudentInfo> info;
+    bool show_filtered = false;
+    size_t filter_col;
+    std::string filter_token;
 public:
     //Константы
     const int NAME_WIDTH = 20; // Длина поля имени
@@ -66,10 +69,14 @@ public:
     std::string getField(size_t i, Inf field) const;
     std::string getField(size_t row, size_t col) const;
     std::vector<StudentInfo> getInfoVec() const;
-    std::vector<size_t> getFilterHit(size_t col, std::string str) const;
+    std::vector<size_t> getFilterHit(size_t col, std::string str) const; // получение прямо сейчас
+    std::vector<size_t> getFilterHit() const; // получение по filter_token
+    bool isInFilter(size_t row) const;
+    bool getIsFilter() const;
 
     // Геттеры информации о базе
     size_t size() const { return info.size(); }
+    size_t sizeIfFilter() const { return show_filtered ? getFilterHit().size() : size(); }
     bool empty() const { return info.empty(); }
 
     //Изменение данных
@@ -80,5 +87,6 @@ public:
     bool setField(size_t row, size_t col, std::string str = "");
     bool setField(size_t row, Inf col, std::string str = "");
     bool editAllFind(size_t col, std::string str, std::string new_str);
-
+    void changeFilter();
+    void changeFilter(size_t col, std::string str, bool b = false);//
 };

@@ -252,10 +252,11 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
-    menu_out.menu.resize(data.size());
+    menu_out.menu.resize(data.sizeIfFilter());
 
     for (size_t i = 0; i < data.size(); ++i)
     {
+        if(data.getIsFilter() && data.isInFilter(i))
         menu_out.menu[i].name = "";
 
         menu_out.menu[i].param =
@@ -334,7 +335,7 @@ StateType Viewer::handleNav() {
     }
 }
 
-//=======================Viewer=======================
+//=======================ViewerTab=======================
 ViewerTab::ViewerTab() {
     LOG_INFO("Запуск конструктора ViewerTab");
 

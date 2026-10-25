@@ -249,6 +249,22 @@ std::vector<size_t> DataBase::getFilterHit(size_t col, std::string str) const {
     return filtered;
 }
 
+std::vector<size_t> DataBase::getFilterHit() const {
+    return getFilterHit(filter_col, filter_token);
+}
+
+bool DataBase::isInFilter(size_t row) const {
+    if (!show_filtered) return true;
+    if (row >= size()) return false;
+    return search_field(getField(row, filter_col), filter_token);
+}
+
+bool DataBase::getIsFilter() const {
+    return show_filtered;
+}
+
+
+
 void DataBase::updateNum() {
     for (int i = 0; i < size(); i++) {
         info[i].row = i + 1;
@@ -346,4 +362,14 @@ bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
         setField(filt_row_arr[i], col, new_str);
     }
     return 1;
+}
+
+void DataBase::changeFilter() {
+    show_filtered != show_filtered;
+}
+
+void DataBase::changeFilter(size_t col, std::string str, bool b) {
+    filter_token = str;
+    filter_col = col;
+    show_filtered = b;
 }
