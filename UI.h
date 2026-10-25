@@ -269,3 +269,13 @@ public:
     FilterMenu(DataBase& d, Position& p, StateType before_state);
 };
 
+class FindMenu : public FindMenuLogic {
+public: 
+    FindMenu(DataBase& d, Position& p, StateType before_state);
+    Position getPos();
+private:
+    Position pos_of_find;
+    std::string createString();
+
+    bool beforeShow() override;
+};

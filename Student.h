@@ -93,7 +93,7 @@ public:
     bool inFilter(size_t row) const;
 
     // Включён ли сейчас фильтр
-    bool getIsFilter() const;
+    bool isOnfilter() const;
 
     // Формирования строки о текущих строках фильтра
     std::string getFilterInf() const;
@@ -134,6 +134,7 @@ public:
 
     // Переключить фильтр вкл/выкл
     void changeFilter();
+    void changeFilter(bool b);
 
     // Задать фильтр: колонка, строка поиска, включён ли он
     void changeFilter(size_t col, std::string str, bool b = false);

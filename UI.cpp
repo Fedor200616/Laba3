@@ -228,6 +228,7 @@ StateType MenuLogic::handleNav() {
 
 Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
+    LOG_INFO("Текцщий фильтр: " + data.getFilterInf());
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT - 1); // Общее количество колонок в меню
     menu_out.act = db_act; // Начальная активная позиция
@@ -252,12 +253,21 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
+    if (data.sizeIfFilter() <= 0) {
+        LOG_WARN("Нет полей соответсвующих фильтру");
+        data.changeFilter(false);
+    }
+
     menu_out.menu.resize(data.sizeIfFilter()); //делаем заренее размер массива
 
+    if (menu_out.menu.size() <= 0) {
+        LOG_ERROR("Размер базы = 0");
+        return;
+    }
     size_t _row = 0;
     for (size_t i = 0; i < data.size(); ++i)
     {
-        if (data.getIsFilter() && !data.inFilter(i)) { // если данные фильтруются и поле не совпало
+        if (data.isOnfilter() && !data.inFilter(i)) { // если данные фильтруются и поле не совпало
             continue;
         }
         
@@ -346,7 +356,8 @@ ViewerTab::ViewerTab(DataBase& db) : data(db) {
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Найти поле", .state_aft = S::ReplaceAll},
+        {.name = "Найти поле", .state_aft = S::FindMenu},
+        {.name = "Найти и заменить поля", .state_aft = S::ReplaceAll},
         {.name = "Фильтр строк ", .param = [this]() {return data.getFilterInf(); } ,.state_aft = S::FilterMenu},
         {.name = "Отображение с фильтром", .param = [this]() {return filterShow(); }, .act_aft = [this]() {data.changeFilter(); }},
     };
@@ -359,7 +370,7 @@ ViewerTab::ViewerTab(DataBase& db) : data(db) {
 }
 
 std::string ViewerTab::filterShow() {
-    if (data.getIsFilter())
+    if (data.isOnfilter())
         return "(Включено)";
     else
         return "(Выключено)";
@@ -686,3 +697,53 @@ FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(
     menu_out.before_state = StateType::ViewerTab;
 }
 
+//==========================FindMenu================================
+FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+    pos_of_find = { p.row, p.col };
+    menu_out.menu[2].show = false;
+    menu_out.menu[4].name = "";
+    menu_out.menu[4].param = [this]() { return createString(); };
+    menu_out.menu[4].act_aft = [this]() { pos = pos_of_find; };   // перейти к найденной строке
+    menu_out.menu[4].state_aft = StateType::Viewer;
+    menu_out.before_state = StateType::Viewer;
+}
+
+bool FindMenu::beforeShow() {
+    bool res = FindMenuLogic::beforeShow();
+    std::string rt_find = (typing && menu_out.act.row == 1) ? input_line.text() : find_str;
+
+    std::vector<size_t> hits = data.getFilterHit(field_int, rt_find);
+    menu_out.total.col = hits.size();
+
+    if (hits.empty()) {
+        menu_out.menu[4].show = false;
+        menu_out.act.col = 0;
+        pos_of_find.row = pos.row;            // оставляем прежнюю позицию
+    }
+    else {
+        menu_out.menu[4].show = true;
+        if (menu_out.act.col >= hits.size())
+            menu_out.act.col = hits.size() - 1;
+        pos_of_find.row = hits[menu_out.act.col];
+    }
+    pos_of_find.col = field_int - 1;          // без колонки "#"
+
+    return res;
+}
+
+Position FindMenu::getPos() {
+    return pos_of_find;
+}
+
+std::string FindMenu::createString() {
+    std::ostringstream ss;
+    for (size_t i = 0; i < static_cast<size_t>(data.INFO_COL_COUNT); i++) {
+        UI::addCell(
+            ss,
+            data.getField(pos_of_find.row, i),
+            data.getWidthVec()[i]
+        );
+    }
+    ss << "\033[K\n";
+    return ss.str();
+}

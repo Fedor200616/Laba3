@@ -71,6 +71,13 @@ void Application::run() {
             current_state = menu.menuShow();
             break;
         }
+        case StateType::FindMenu: {
+            LOG_INFO("Меню поиска");
+            FindMenu menu(students_info, db_act_pos, StateType::Viewer);
+            current_state = menu.menuShow();
+            db_act_pos = menu.getPos();
+            break;
+        }
         case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";

@@ -259,7 +259,7 @@ bool DataBase::inFilter(size_t row) const {
     return search_field(getField(row, filter_col), filter_token);
 }
 
-bool DataBase::getIsFilter() const {
+bool DataBase::isOnfilter() const {
     return show_filtered;
 }
 
@@ -371,6 +371,10 @@ bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
 
 void DataBase::changeFilter() {
     show_filtered = !show_filtered;
+}
+
+void DataBase::changeFilter(bool b) {
+    show_filtered = b;
 }
 
 void DataBase::changeFilter(size_t col, std::string str, bool b) {
