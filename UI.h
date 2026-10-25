@@ -185,8 +185,12 @@ private:
 
 class ViewerTab : public MenuLogic {
 public:
-    ViewerTab();
+    ViewerTab(DataBase& db);
 private:
+    DataBase& data;
+    std::string filterShow();
+
+    StateType handleNav() override;
 };
 
 class EditMenu : public MenuLogic {
@@ -258,3 +262,10 @@ class ReplaceMenu : public FindMenuLogic {
 public:
     ReplaceMenu(DataBase& d, Position& p, StateType before_state);
 };
+
+
+class FilterMenu : public FindMenuLogic {
+public:
+    FilterMenu(DataBase& d, Position& p, StateType before_state);
+};
+

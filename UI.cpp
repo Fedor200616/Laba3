@@ -146,8 +146,8 @@ std::string MenuLogic::showUI() {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
             ss << menu_out.menu[i].name;
-            if 
-                (menu_out.menu[i].param) ss << ' ' << menu_out.menu[i].param() << '\n';
+            if (menu_out.menu[i].param)
+                ss << ' ' << menu_out.menu[i].param() << '\n';
             else 
                 ss << "\033[K\n";
         }
@@ -252,22 +252,27 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
-    menu_out.menu.resize(data.sizeIfFilter());
+    menu_out.menu.resize(data.sizeIfFilter()); //делаем заренее размер массива
 
+    size_t _row = 0;
     for (size_t i = 0; i < data.size(); ++i)
     {
-        if(data.getIsFilter() && data.isInFilter(i))
-        menu_out.menu[i].name = "";
+        if (data.getIsFilter() && !data.inFilter(i)) { // если данные фильтруются и поле не совпало
+            continue;
+        }
+        
+        menu_out.menu[_row].name = "";
 
-        menu_out.menu[i].param =
+        menu_out.menu[_row].param =
             [this, i]() {
             return createString(i);
             };
 
-        menu_out.menu[i].show = false;
-        menu_out.menu[i].enter = true;
+        menu_out.menu[_row].show = false;
+        menu_out.menu[_row].enter = true;
 
-		menu_out.menu[i].state_aft = StateType::EditMenu;
+		menu_out.menu[_row].state_aft = StateType::EditMenu;
+        _row++;
     }
 
     menu_out.ActMark = "";
@@ -336,21 +341,37 @@ StateType Viewer::handleNav() {
 }
 
 //=======================ViewerTab=======================
-ViewerTab::ViewerTab() {
+ViewerTab::ViewerTab(DataBase& db) : data(db) {
     LOG_INFO("Запуск конструктора ViewerTab");
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Найти поле", .state_aft = S::ANYKEY},
-        {.name = "Фильтр строк", .state_aft = S::ANYKEY},
-        {.name = "Очистить фильтр", .act_aft = []() {return 0; }},
+        {.name = "Найти поле", .state_aft = S::ReplaceAll},
+        {.name = "Фильтр строк ", .param = [this]() {return data.getFilterInf(); } ,.state_aft = S::FilterMenu},
+        {.name = "Отображение с фильтром", .param = [this]() {return filterShow(); }, .act_aft = [this]() {data.changeFilter(); }},
     };
     menu_out.before_show = "Выберите действие с просмотром данных";
     menu_out.post_show = "\n"
         "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
         "Нажмите Tab для возврата к просмотру данных, ESC для возврата в главное меню";
     menu_out.total.row = menu_out.menu.size();
+    menu_out.before_state = S::Viewer;
+}
 
+std::string ViewerTab::filterShow() {
+    if (data.getIsFilter())
+        return "(Включено)";
+    else
+        return "(Выключено)";
+}
+
+StateType ViewerTab::handleNav() {
+    if (menu_out.tab_ent) {
+        return StateType::Viewer;
+    }
+    else {
+        return MenuLogic::handleNav();
+    }
 }
 
 //=======================EditMenu=======================
@@ -621,6 +642,7 @@ void FindMenuLogic::editAll(){
 }
 
 bool FindMenuLogic::beforeShow() {
+    system("cls");
     if (typing)
         menu_out.ActMark = "\033[0m";
     else 
@@ -648,9 +670,19 @@ StateType FindMenuLogic::handleNav() {
 }
 
 //==========================ReplaceMenu================================
-
 ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s){
-    menu_out.menu[0].enter = false;
-    menu_out.menu[1].enter = false;
     menu_out.act.row = 2;
 }
+
+//==========================FilterMenu================================
+FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+    field_int = data.getFilterCol();
+    find_str = data.getFilterStr();
+    menu_out.menu[1].name = "Фильтр по тексту";
+    menu_out.menu[2].show = false;
+    menu_out.menu[4].name = "Применить фильтр";
+    menu_out.menu[4].act_aft = [this]() {return data.changeFilter(field_int, find_str, true); };
+    menu_out.menu[4].state_aft = StateType::ViewerTab;
+    menu_out.before_state = StateType::ViewerTab;
+}
+

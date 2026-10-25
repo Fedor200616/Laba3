@@ -36,9 +36,14 @@ void Application::run() {
 		system("cls"); // Очистка экрана для Windows
         switch (current_state) {
         case StateType::Viewer:{ // Меню просмотра полей студентов
-            Viewer Viewer(students_info, db_act_pos);
-            current_state = Viewer.menuShow();
-            db_act_pos = Viewer.getActivePosition();
+            Viewer viewer(students_info, db_act_pos);
+            current_state = viewer.menuShow();
+            db_act_pos = viewer.getActivePosition();
+            break;
+        }
+        case StateType::ViewerTab: {
+            ViewerTab viewer_tab(students_info);
+            current_state = viewer_tab.menuShow();
             break;
         }
         case StateType::EditMenu: { // Меню работы с полем
@@ -54,9 +59,15 @@ void Application::run() {
             current_state = edit_field.menuShow();
             break;
         }
-        case StateType::ReplaceAll: { // ВРЕМЕННО, класс поиска и замены полей
+        case StateType::ReplaceAll: { // класс замены полей выделенной колнки
             LOG_INFO("Изменение или поиск всех полей");
             ReplaceMenu menu(students_info, db_act_pos, StateType::Viewer);
+            current_state = menu.menuShow();
+            break;
+        }
+        case StateType::FilterMenu: {
+            LOG_INFO("Меню фильтра");
+            FilterMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();
             break;
         }

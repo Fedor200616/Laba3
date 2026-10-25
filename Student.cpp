@@ -253,7 +253,7 @@ std::vector<size_t> DataBase::getFilterHit() const {
     return getFilterHit(filter_col, filter_token);
 }
 
-bool DataBase::isInFilter(size_t row) const {
+bool DataBase::inFilter(size_t row) const {
     if (!show_filtered) return true;
     if (row >= size()) return false;
     return search_field(getField(row, filter_col), filter_token);
@@ -263,7 +263,12 @@ bool DataBase::getIsFilter() const {
     return show_filtered;
 }
 
-
+std::string DataBase::getFilterInf() const {
+    if (filter_col == 0)
+        return "";
+    else
+        return filter_token + ", в колонке " + HEADER[filter_col];
+}
 
 void DataBase::updateNum() {
     for (int i = 0; i < size(); i++) {
