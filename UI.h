@@ -107,12 +107,51 @@ protected:
     MenuNav GetAction(input::key key_code) const;
 
     virtual bool beforeShow(); //Функция действия перед показом меню
-    std::string showUI(); // Функция показа меню
+    std::string showUI(); // Функция формирования строки на вывод
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
     bool windowSize() const {
         std::cout << "\033[H";
         return true;
+    }
+};
+
+class NotVerMenu : public MenuLogic {
+public:
+    NotVerMenu(std::string s, size_t c) : str(s), inf(sizeToInf(c)) {
+        LOG_INFO("Меню отображения ошибки");
+        system("cls");
+        menu_out.before_show = "Недопустимые символы в введенной строке " + str;
+        switch (inf) {
+        case Inf::name:
+            menu_out.post_show = "В фамилии студента допустимы только маленькие буквы и знаки -, _, ' \n";
+            break;
+        case Inf::group:
+            menu_out.post_show = "В номере группы допустимы только буквы, цифры, дефис и подчёркивание \n";
+            break;
+        case Inf::pass:
+            menu_out.post_show = "Пароль должен содержать не менее 8 символов и не более %d символов\n"
+                "Пароль должен содержать хотя бы одну латинскую букву и латинскую заглавную букву, "
+                "цифру и специальный знак\n";
+            break;
+        case Inf::num:
+            menu_out.post_show = "В номере студента в группе допустимы только цифры\n";
+            break;
+        default:
+            LOG_WARN("Вызвано исключение в меню отображения, неизвестная информация\n");
+            break;
+        }
+        menu_out.ActMark = "";
+        menu_out.post_show += "Нажмите любую клавишу чтобы вернуться к вводу\n";
+        menu_out.before_state = StateType::ANYKEY;
+    }
+private:
+    Inf inf;
+    std::string str;
+    StateType handleNav() override {
+        bool key = input::getAnyKey();
+        system("cls");
+        return StateType::ANYKEY;
     }
 };
 
@@ -122,6 +161,8 @@ private:
 
     int num_width = 0;
     int menu_width = 0;
+
+    size_t first_row = 0;
 public:
     Viewer(DataBase& students, Position db_act);
 
@@ -136,9 +177,20 @@ private:
     void updateMenu();
 
     bool beforeShow() override;
+    StateType handleNav() override;
 
     const unsigned int MENU_SHOW_LENGTH = 20;
 	const int MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
+};
+
+class ViewerTab : public MenuLogic {
+public:
+    ViewerTab(DataBase& db);
+private:
+    DataBase& data;
+    std::string filterShow();
+
+    StateType handleNav() override;
 };
 
 class EditMenu : public MenuLogic {
@@ -180,18 +232,19 @@ private:
 };
 
 
-class EditAllField : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
+class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
-    EditAllField(DataBase& d, Position& p);
+    FindMenuLogic(DataBase& d, Position& p, StateType before_state);
 protected:
     DataBase& data;
     Position& pos;
 
     size_t field_int;
     std::string field;
-    std::string old_str;
-    std::string new_str = "";
-    size_t match = 0; //совпадения поиска
+    std::string find_str;
+    std::string repl_str = "";
+    size_t match() const; //совпадения поиска
+    std::string line(size_t item, const std::string& value) const;
 
     bool typing = false;
     std::string* target = nullptr;   // какую строку сейчас набираем
@@ -199,4 +252,30 @@ protected:
 
     void startInput(); // Функция печати для поиска
     void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
+    void editAll();
+
+    bool beforeShow() override;
+    StateType handleNav() override;
+};
+
+class ReplaceMenu : public FindMenuLogic {
+public:
+    ReplaceMenu(DataBase& d, Position& p, StateType before_state);
+};
+
+
+class FilterMenu : public FindMenuLogic {
+public:
+    FilterMenu(DataBase& d, Position& p, StateType before_state);
+};
+
+class FindMenu : public FindMenuLogic {
+public: 
+    FindMenu(DataBase& d, Position& p, StateType before_state);
+    Position getPos();
+private:
+    Position pos_of_find;
+    std::string createString();
+
+    bool beforeShow() override;
 };
