@@ -438,11 +438,11 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
         // Item::Row: строка студента, не выбирается
         {.param = [this]() { return createString(); }, .enter = false },
 
-        {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
-        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  // после основного меню: то же меню, только с введённым полем
-        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
-        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
-        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
+        {.name = "Изменить", .state_aft = S::EditField },  
+        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  
+        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }},  
+        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer }, 
+        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  
         {.name = "Вернуться к просмотру полей", .state_aft = S::Viewer },
     };
 
