@@ -45,6 +45,8 @@ Inf sizeToInf(size_t col);
 class DataBase {
 private:
     std::vector<StudentInfo> info;  // Все записи базы данных
+    bool data_valid = true;
+
     bool show_filtered = false;     // Включён ли фильтр (показывать только найденные строки)
     size_t filter_col = 1;          // Колонка, по которой работает фильтр
     std::string filter_token = "";       // Строка поиска фильтра
@@ -138,4 +140,11 @@ public:
 
     // Задать фильтр: колонка, строка поиска, включён ли он
     void changeFilter(size_t col, std::string str, bool b = false);
+
+    // Парсинг базы данных на ошибки
+    size_t checkIntegrity();
+
+    bool isDataValid() const {
+        return data_valid;
+    }
 };

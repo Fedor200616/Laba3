@@ -382,3 +382,35 @@ void DataBase::changeFilter(size_t col, std::string str, bool b) {
     filter_col = col;
     show_filtered = b;
 }
+
+size_t DataBase::checkIntegrity() {
+    data_valid = true;
+    updateNum();
+
+    for (size_t i = 0; i < info.size(); ++i) {
+        const StudentInfo& student = info[i];
+
+        // Проверяем нумерацию строк
+        if (student.row != i + 1) {
+            data_valid = false;
+            LOG_ERROR("Нарушена нумерация строк: " +
+                      std::to_string(i));
+            return i;
+        }
+
+        // Проверяем корректность значений полей
+        if (!validate::check(Inf::name, student.name) ||
+            !validate::check(Inf::group, student.group) ||
+            !validate::check(Inf::num, student.num) ||
+            !validate::check(Inf::pass, student.pass)) {
+
+            data_valid = false;
+            LOG_ERROR("Обнаружены некорректные данные в строке: " +
+                      std::to_string(i + 1));
+            return i;
+        }
+    }
+
+    LOG_INFO("Проверка целостности базы данных пройдена");
+    return info.size();
+}
