@@ -140,7 +140,8 @@ std::string MenuLogic::showUI() {
 
     std::ostringstream ss;
 	ss << "\033[0m"; // Сброс цвета и стиля
-    ss << menu_out.before_show << '\n'; //Отображение шапки
+    if(!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
+        ss << menu_out.before_show << '\n'; //Отображение шапки
 
     for (size_t i = 0; i < menu_out.total.row; i++) {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
@@ -233,15 +234,39 @@ MainMenu::MainMenu(File& f) : file(f){
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Файл данных: "},
+        {.name = "Файл данных: "}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
-        {.name = "Меню поиска", .state_aft = S::FindMenu},
+        {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения"},
-        {.name = "Сохранить"},
+        {.name = "Сохранить"}, //4
         {.name = "Сохранить как"},
+        {.name = "Выйти из программы"}, //6
     };
+    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+                            "Клавишу Enter для выбора пункта меню";
+    menu_out.total.row = menu_out.menu.size();
+    menu_out.before_state = S::MainMenu;
+    displaySet(file.exist());
+}
 
-    
+std::string MainMenu::path_str(){
+    std::string path = pathToUtf8(file.getFilePath);
+    bool sel = file.exist();
+    if(sel)
+        return path;
+    else{
+        displaySet(false);
+        return "Выберите файл";
+    }
+    return "";
+}
+
+void MainMenu::displaySet(bool file_exist){
+    menu_out.menu[1].show = file_exist;
+    menu_out.menu[2].show = file_exist;
+    menu_out.menu[3].show = file_exist;
+    menu_out.menu[4].show = file_exist;
+    menu_out.menu[5].show = file_exist;
 }
 
 

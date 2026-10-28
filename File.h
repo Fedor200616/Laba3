@@ -38,11 +38,9 @@ public:
     File() {}
 
     std::vector<StudentInfo> loadFromFile();
-    bool saveToFile(const std::vector<StudentInfo>& Info);
-    bool createBackup(const fs::path& main_path, const std::vector<StudentInfo>& Info);
-    bool removeBackup(const fs::path& main_path);
+    fs::path getFilePath(){return filePath;};
+    bool exist();
     
-
     bool isModified() const {
         return is_modified;
     }

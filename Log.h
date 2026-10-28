@@ -8,9 +8,9 @@
 namespace fs = std::filesystem;
 
 inline std::string pathToUtf8(const fs::path& p) {
-    std::u8string u8 = p.u8string(); // C++20: берём из внутреннего wstring, напрямую в UTF-8
-    return std::string(u8.begin(), u8.end());
-}
+    std::u8string u8 = p.u8string(); // Получаем путь в кодировке UTF-8
+    return std::string(u8.begin(), u8.end()); //Проходимся побайтово от начала до конца
+} 
 
 //Синглтон, обьект один
 
