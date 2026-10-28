@@ -120,11 +120,12 @@ protected:
 
 class MainMenu : public MenuLogic {
 public:
-    MainMenu(AppConfig& app);
+    MainMenu(File& f);
 
 private:
-    AppConfig& app_info;
+    File& file;
 
+    std::string path_str();
 
 }
 

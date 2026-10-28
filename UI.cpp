@@ -226,7 +226,7 @@ StateType MenuLogic::handleNav() {
 
 //=======================MainMenu======================
 
-MainMenu::MainMenu(AppConfig& app) : app_info(app){
+MainMenu::MainMenu(File& f) : file(f){
     LOG_INFO("Запуск конструктора MainMenu");
     menu_out.total.col = 1;
     menu_out.act = {0, 0};
