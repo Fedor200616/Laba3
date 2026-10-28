@@ -80,7 +80,7 @@ std::vector<StudentInfo> File::loadFromFile() {
     bool header_found = false; // Флаг нахождения заголовка
     if (filePath.empty() || !fs::exists(filePath)) {
         LOG_ERROR("Файл не существует или не найден: " + pathToUtf8(filePath));
-        type = fileType::ERR;
+        type = PathType::ERR;
         return result;
     }
 
@@ -91,7 +91,7 @@ std::vector<StudentInfo> File::loadFromFile() {
 
 	if (!ifile.is_open()) {           // проверяем открыто ли
 		LOG_ERROR("Не удалось открыть файл фамилий\n");
-        type = fileType::ERR;
+        type = PathType::ERR;
 		return result;
 	}
 
@@ -124,7 +124,7 @@ std::vector<StudentInfo> File::loadFromFile() {
 
             if (!ok) {
                 LOG_ERROR("Ошибка в шапке файла");
-                type = fileType::ERR;
+                type = PathType::ERR;
                 return {};
             }
 
