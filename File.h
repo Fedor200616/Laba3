@@ -21,42 +21,13 @@ enum class PathType {
     ERR
 };
 
-/// <summary>
-/// Отвечает за работу с файлом, переносы в него и из него массивов
-/// </summary>
-class File {
-private:
-    fs::path filePath = ""; // путь к файлу
-    PathType type = PathType::NONE; // тип файла
-    bool is_modified = false; // Был ли модифицирован файл
-
-    StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
-public:
-    bool have_marker = false;
-
-    File(fs::path file){
-        LOG_INFO("Запуск конструктора File");
-        filePath = file;
-        LOG_INFO(std::string("Путь к файлу ") + pathToUtf8(filePath));
-    }
-    File() {}
-
-    std::vector<StudentInfo> loadFromFile();
-    fs::path getFilePath() const {return filePath;}
-    bool exist() const { return !filePath.empty(); }
-    
-    bool isModified() const {
-        return is_modified;
-    }
-};
-
 struct DirectoryEntry {
     fs::path path;
     PathType file_type = PathType::NONE;
     bool real;
     std::uintmax_t size;
     std::filesystem::file_time_type last_write;
-    
+
     DirectoryEntry(fs::path fp) : path(fp) {
         init();
     };
@@ -83,10 +54,10 @@ struct DirectoryEntry {
         if (ec)
             size = 0;
     }
-    PathType type(){
+    PathType type() const {
         if (file_type != PathType::NONE)
             return file_type;
-        if(fs::is_directory(path)){
+        if (fs::is_directory(path)) {
             return PathType::Folder;
         }
         else if (!fs::is_regular_file(path)) {
@@ -98,8 +69,8 @@ struct DirectoryEntry {
         else return PathType::OtherFile;
     }
     //Геттеры:
-    std::string typeEmoji() const{ //Получение эмодзи на основе типа
-        switch (file_type){
+    std::string typeEmoji() const { //Получение эмодзи на основе типа
+        switch (file_type) {
         case PathType::Folder:
             return "📁";
         case PathType::TXT:
@@ -116,7 +87,7 @@ struct DirectoryEntry {
             return "▫️";
         }
     }
-    std::string checkEmoji(bool checked = false) const{ // Получение эмодзи, что файл соответствует формату
+    std::string checkEmoji(bool checked = false) const { // Получение эмодзи, что файл соответствует формату
         if (checked)
             return "✅";
         else
@@ -124,13 +95,64 @@ struct DirectoryEntry {
     }
 };
 
+/// <summary>
+/// Отвечает за работу с файлом, переносы в него и из него массивов
+/// </summary>
+class File {
+private:
+    fs::path filePath = ""; // путь к файлу
+    PathType type = PathType::NONE; // тип файла
+    bool is_modified = false; // Был ли модифицирован файл
+
+    StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
+public:
+    bool have_marker = false;
+
+    File(fs::path file) : filePath(file){ //Старый конструктор, остался для совместимости с аргументами cmd
+        LOG_INFO("Запуск конструктора File");
+        LOG_INFO(std::string("Путь к файлу ") + pathToUtf8(filePath));
+        if (filePath.extension() == ".txt")
+            type = PathType::TXT;
+        else if (filePath.extension() == ".csv")
+            type = PathType::CSV;
+        else
+            LOG_ERROR("Ошибка типа файла: расширение файла " + pathToUtf8(filePath.extension()));
+    }
+    File(const DirectoryEntry& de) : filePath(de.path), type(de.type()) {
+        if (filePath.empty())
+            return;
+        LOG_INFO("Запуск конструктора File");
+        LOG_INFO(std::string("Путь к файлу ") + pathToUtf8(filePath));
+        if (!(type == PathType::CSV || type == PathType::TXT))
+            LOG_ERROR("Ошибка типа файла: " + std::to_string(static_cast<int>(type)) + ", Расширение файла " + pathToUtf8(filePath.extension()));
+    }
+
+    std::vector<StudentInfo> loadFromFile();
+    fs::path getFilePath() const {return filePath;}
+    bool exist() const { return !filePath.empty(); }
+    
+    bool isModified() const {
+        return is_modified;
+    }
+};
+
 class Explorer {
 private:
-    const fs::path default_path;
-    fs::path curr_path;
-    std::vector<DirectoryEntry> files;
+    const fs::path default_path; // Путь самого первого нахождения окна
+    fs::path curr_path; //Путь, по которому находится окно проводника
+    //DirectoryEntry file_path; //Путь к последнему выбранному файлу, и соответсвенно, файлу с которым ма работаем
+    std::vector<DirectoryEntry> file_arr;
+    void fillFiles();
+    bool openDir(const DirectoryEntry& entry);
+    bool backDir(const DirectoryEntry& entry);
+    bool openFile(const DirectoryEntry& entry);
+    
 public:
-    explicit Explorer(const fs::path& startPath)
-        : curr_path(startPath) {}
+    Explorer(fs::path def_path) : default_path(def_path) {
+        curr_path = fs::is_directory(default_path) ? default_path : default_path.parent_path();
+        fillFiles();
+    };
+    std::vector<DirectoryEntry> fileArr() const;
+    bool openPath(const DirectoryEntry& entry);
 
 };

@@ -142,3 +142,35 @@ std::vector<StudentInfo> File::loadFromFile(){
 	LOG_INFO("Количество записей: " + std::to_string(result.size()));
     return result;
 }
+
+void Explorer::fillFiles() {
+    if (!fs::exists(curr_path) || !fs::is_directory(curr_path)) {
+        LOG_WARN("Ошибка формирования вектора файлов в директории " + pathToUtf8(curr_path));
+        return;
+    }
+    file_arr.clear();
+    if (curr_path != curr_path.root_path()) {
+        file_arr.emplace_back(curr_path.parent_path(), PathType::BackDir);
+    }
+
+    for (const auto& entry : fs::directory_iterator(curr_path)) { //Построчечно проходимся по файлам в директории
+         file_arr.push_back(entry.path());
+    }
+}
+
+std::vector<DirectoryEntry> Explorer::fileArr() const {
+    if(!file_arr.empty())
+        return file_arr;
+    else {
+        LOG_WARN("В директории отсутсвует информация Explorer::fileArr()");
+        DirectoryEntry parent_path(curr_path.parent_path(), PathType::BackDir);
+        std::vector<DirectoryEntry> arr;
+        arr.push_back(parent_path);
+        return arr;
+    }
+}
+
+bool Explorer::openPath(const DirectoryEntry& entry) {
+    return 0;
+
+}
