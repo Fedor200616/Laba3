@@ -4,7 +4,8 @@
 //Конструктор главного управленца
 Application::Application(int argc, char* argv[])
     : app_info(argc, argv),
-    file_manager(app_info.getStartPath()) {
+    file_manager(app_info.getStartPath()),
+    explorer(app_info.getStartPath()){
     Log::getInstance().init(
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
@@ -13,7 +14,7 @@ Application::Application(int argc, char* argv[])
 	std::string log_message = "Приложение запущено с аргументами: " + pathToUtf8(app_info.getConfig().arg_str); 
 
     LOG_INFO(log_message);
-
+    
     fs::path start_path = app_info.getStartPath();
     if (!start_path.empty() && fs::exists(start_path)) { // Импортируем файл, если он указан в флагах запуска
         auto loaded_students = file_manager.loadFromFile(); 
@@ -38,6 +39,11 @@ void Application::run() {
         switch (current_state) {
         case StateType::MainMenu:{
             MainMenu menu(file_manager);
+            current_state = menu.menuShow();
+            break;
+        }
+        case StateType::Explorer: {
+            ExplorerMenuLogic menu(explorer);
             current_state = menu.menuShow();
             break;
         }
@@ -102,3 +108,4 @@ void Application::run() {
         prev_state = buf_state;
     }
 }   
+

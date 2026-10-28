@@ -170,7 +170,31 @@ std::vector<DirectoryEntry> Explorer::fileArr() const {
     }
 }
 
-bool Explorer::openPath(const DirectoryEntry& entry) {
-    return 0;
+OpenResult Explorer::openPath(const DirectoryEntry& entry) {
+    auto path = entry.path;
+    std::error_code ec;
+    if (!path.empty() && fs::is_regular_file(path, ec))
+        return OpenResult::Failed;
+    switch (entry.type()) {
+    case PathType::Folder:
+        curr_path = path;
+        fillFiles();
+        return OpenResult::DirectoryChanged;
+    case PathType::BackDir:
+        if (curr_path != curr_path.root_path()) {
+            curr_path = curr_path.parent_path();
+            fillFiles();
+        }
+        return OpenResult::DirectoryChanged;
+    case PathType::TXT:
+    case PathType::CSV:
+        selected_entry = entry;
+        return OpenResult::FileSelected;
+    default:
+        return OpenResult::Failed;
+    }
+}
 
+DirectoryEntry Explorer::getFileEntry() const {
+    return selected_entry;
 }

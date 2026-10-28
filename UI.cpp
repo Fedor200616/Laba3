@@ -1,3 +1,5 @@
+#include <format>
+#include <chrono>
 #include "UI.h"
 #include "Student.h"
 
@@ -80,6 +82,33 @@ namespace UI {
                 widths[i]
             );
         }
+        return ss.str();
+    }
+
+    // Форматирование времени последнего изменения
+    std::string formatLastWrite(
+        const fs::file_time_type& file_time
+    ) {
+        if (file_time == fs::file_time_type{}) {
+            return "-";
+        }
+
+        const auto system_time =
+            std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                file_time - fs::file_time_type::clock::now()
+                + std::chrono::system_clock::now()
+            );
+
+        const std::time_t time =
+            std::chrono::system_clock::to_time_t(system_time);
+
+        std::tm local_time{};
+
+        localtime_s(&local_time, &time);
+
+        std::ostringstream ss;
+        ss << std::put_time(&local_time, "%d.%m.%Y %H:%M");
+
         return ss.str();
     }
 }
@@ -233,7 +262,7 @@ MainMenu::MainMenu(File& f) : file(f){
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Файл данных: ", .param = [this](){return path_str();}}, //0
+        {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::Explorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения"},
@@ -245,10 +274,10 @@ MainMenu::MainMenu(File& f) : file(f){
                             "Клавишу Enter для выбора пункта меню";
     menu_out.total.row = menu_out.menu.size();
     menu_out.before_state = S::MainMenu;
-    displaySet(file.exist());
 }
 
 std::string MainMenu::path_str(){
+    displaySet(file.exist());
     if(!file.exist())
         return "Выберите файл";
     return pathToUtf8(file.getFilePath());
@@ -261,8 +290,6 @@ void MainMenu::displaySet(bool file_exist){
     menu_out.menu[4].show = file_exist;
     menu_out.menu[5].show = file_exist;
 }
-
-
 
 //=======================Viewer=======================
 
@@ -788,5 +815,77 @@ std::string FindMenu::createString() {
     return ss.str();
 }
 
+//==================================Меню проводника=========================================
 
+ExplorerMenuLogic::ExplorerMenuLogic(Explorer& exp) : explorer(exp), entries(explorer.fileArr()) {
+    menu_out.before_show = "";
+    menu_out.total = { entries.size(), 1 };
+    for (size_t i = 0; i < entries.size(); ++i) {
+        menu_out.menu.push_back({ .name = "", 
+            .param = [this, i]() {return createFileStr(i); }, 
+            .act_aft = [this, i]() {select(i); } 
+        });
+    }
+    menu_out.post_show = "";
+    menu_out.before_state = StateType::MainMenu;
+}
 
+std::string ExplorerMenuLogic::createFileStr(size_t index) {
+    if (index >= entries.size()) { //Вышли за пределы массива
+        return "";
+    }
+
+    const auto& entry = entries[index]; // копия "строки"
+
+    std::ostringstream ss;
+
+    std::string name = pathToUtf8(entry.path.filename());
+    const PathType type = entry.type();
+    if (type == PathType::BackDir) {
+        name = "Назад";
+    }
+    const std::string icon = entry.typeEmoji();
+    
+    if (UI::utf8Length(name) > NAME_WIDTH) {
+        name = name.substr(0, name.size()); // заменяется ниже
+    }
+    const std::string size =
+        type == PathType::Folder ||
+        type == PathType::RootDir ||
+        type == PathType::BackDir
+        ? "<DIR>"
+        : std::to_string(entry.size) + " Б";
+    const std::string modified =
+        type == PathType::BackDir
+        ? "-"
+        : UI::formatLastWrite(entry.last_write);
+
+    UI::addCell(
+        ss,
+        icon + " " + name,
+        NAME_WIDTH,
+        menu_out.act.row == index,
+        UI::SelType::Selected
+    );
+    UI::addCell(
+        ss,
+        size,
+        12,
+        menu_out.act.row == index,
+        UI::SelType::Selected
+    );
+    UI::addCell(
+        ss,
+        modified,
+        20,
+        menu_out.act.row == index,
+        UI::SelType::Selected
+    );
+    ss << "\033[K";
+
+    return ss.str();
+}
+
+void ExplorerMenuLogic::select(size_t i) {
+    explorer.openPath(entries[i]);
+}

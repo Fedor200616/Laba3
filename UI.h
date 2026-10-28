@@ -295,3 +295,25 @@ private:
     bool beforeShow() override;
 };
 
+//=============================Меню проводника и его наследники====================
+
+class ExplorerMenuLogic : public MenuLogic {
+protected:
+    static constexpr size_t NAME_WIDTH = 30;// Ограничения чтобы оно не ломало таблицу
+
+    Explorer& explorer;
+    std::vector<DirectoryEntry> entries;
+
+
+    std::string createFileStr(size_t index);
+    void select(size_t i);
+
+public:
+    explicit ExplorerMenuLogic(Explorer& exp); //explicit запрещает преобразования типов
+
+
+
+
+};
+
+

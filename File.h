@@ -21,6 +21,12 @@ enum class PathType {
     ERR
 };
 
+enum class OpenResult {
+    DirectoryChanged,
+    FileSelected,
+    Failed
+};
+
 struct DirectoryEntry {
     fs::path path;
     PathType file_type = PathType::NONE;
@@ -57,20 +63,23 @@ struct DirectoryEntry {
     PathType type() const {
         if (file_type != PathType::NONE)
             return file_type;
-        if (fs::is_directory(path)) {
+        std::error_code ec;
+        if (fs::is_directory(path, ec))
             return PathType::Folder;
-        }
-        else if (!fs::is_regular_file(path)) {
+        if (ec)
             return PathType::ERR;
-        }
-        auto ext = path.extension();
+        if (!fs::is_regular_file(path, ec))
+            return PathType::ERR;
+        if (ec)
+            return PathType::ERR;
+        const auto ext = path.extension();
         if (ext == ".txt") return PathType::TXT;
-        else if (ext == ".csv") return PathType::CSV;
-        else return PathType::OtherFile;
+        if (ext == ".csv") return PathType::CSV;
+        return PathType::OtherFile;
     }
     //Геттеры:
     std::string typeEmoji() const { //Получение эмодзи на основе типа
-        switch (file_type) {
+        switch (type()) {
         case PathType::Folder:
             return "📁";
         case PathType::TXT:
@@ -86,12 +95,6 @@ struct DirectoryEntry {
         default:
             return "▫️";
         }
-    }
-    std::string checkEmoji(bool checked = false) const { // Получение эмодзи, что файл соответствует формату
-        if (checked)
-            return "✅";
-        else
-            return "";
     }
 };
 
@@ -129,7 +132,10 @@ public:
 
     std::vector<StudentInfo> loadFromFile();
     fs::path getFilePath() const {return filePath;}
-    bool exist() const { return !filePath.empty(); }
+    bool exist() const {
+        std::error_code ec;
+        return !filePath.empty() && fs::is_regular_file(filePath, ec);
+    }
     
     bool isModified() const {
         return is_modified;
@@ -140,19 +146,16 @@ class Explorer {
 private:
     const fs::path default_path; // Путь самого первого нахождения окна
     fs::path curr_path; //Путь, по которому находится окно проводника
+    DirectoryEntry selected_entry;
     //DirectoryEntry file_path; //Путь к последнему выбранному файлу, и соответсвенно, файлу с которым ма работаем
     std::vector<DirectoryEntry> file_arr;
     void fillFiles();
-    bool openDir(const DirectoryEntry& entry);
-    bool backDir(const DirectoryEntry& entry);
-    bool openFile(const DirectoryEntry& entry);
-    
 public:
-    Explorer(fs::path def_path) : default_path(def_path) {
+    Explorer(fs::path def_path) : default_path(def_path), selected_entry(fs::path{}) {
         curr_path = fs::is_directory(default_path) ? default_path : default_path.parent_path();
         fillFiles();
     };
-    std::vector<DirectoryEntry> fileArr() const;
-    bool openPath(const DirectoryEntry& entry);
-
+    std::vector<DirectoryEntry> fileArr() const; //вектор DirectoryEntry файлов в директории
+    OpenResult openPath(const DirectoryEntry& entry); // открытие пути
+    DirectoryEntry getFileEntry() const; // получение информации об файле
 };
