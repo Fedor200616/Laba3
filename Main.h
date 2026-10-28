@@ -10,8 +10,7 @@
 namespace fs = std::filesystem;
 
 struct AppConfig {
-    fs::path filePath;
-    bool testMode = false;
+    fs::path filePath; //Путь к файлу данных
     bool do_log = false;
     std::string arg_str;
 
@@ -41,8 +40,8 @@ struct AppConfig {
             else if (arg == "-l") {
                 config.do_log = true;
             }
-            else if (arg == "--test") {
-                config.testMode = true;
+            else{
+                LOG_WARN("Неизвестный тип аргумента");
             }
         }
 

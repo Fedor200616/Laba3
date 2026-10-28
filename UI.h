@@ -116,6 +116,18 @@ protected:
     }
 };
 
+//======================Классы наследники меню===========================
+
+class MainMenu : public MenuLogic {
+public:
+    MainMenu(AppConfig app);
+
+private:
+    AppConfig app_info;
+
+
+}
+
 class NotVerMenu : public MenuLogic {
 public:
     NotVerMenu(std::string s, size_t c) : str(s), inf(sizeToInf(c)) {
@@ -231,6 +243,7 @@ private:
     StateType handleNav() override;
 };
 
+//==========================Меню поиска и его производные========================
 
 class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
@@ -279,3 +292,4 @@ private:
 
     bool beforeShow() override;
 };
+
