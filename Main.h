@@ -10,8 +10,7 @@
 namespace fs = std::filesystem;
 
 struct AppConfig {
-    fs::path filePath;
-    bool testMode = false;
+    fs::path filePath; //Путь к файлу данных
     bool do_log = false;
     std::string arg_str;
 
@@ -30,7 +29,7 @@ struct AppConfig {
         for (int i = 1; i < argc; ++i) {
             std::string_view arg(argv[i]);
 
-            if (arg == "-f") {
+            if (arg == "-f") { // Файл по умолчанию
                 if (i + 1 >= argc) {
                     LOG_ERROR("После -f необходимо указать путь к файлу.");
                     continue;
@@ -38,11 +37,11 @@ struct AppConfig {
 
                 config.filePath = argv[++i];
             }
-            else if (arg == "-l") {
+            else if (arg == "-l") { // делать ли лог
                 config.do_log = true;
             }
-            else if (arg == "--test") {
-                config.testMode = true;
+            else{
+                LOG_WARN("Неизвестный тип аргумента");
             }
         }
 

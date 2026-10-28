@@ -140,19 +140,19 @@ std::string MenuLogic::showUI() {
 
     std::ostringstream ss;
 	ss << "\033[0m"; // Сброс цвета и стиля
-    ss << menu_out.before_show << '\n'; //Отображение шапки
+    if(!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
+        ss << menu_out.before_show << '\n'; //Отображение шапки
 
     for (size_t i = 0; i < menu_out.total.row; i++) {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
             ss << menu_out.menu[i].name;
-            if (menu_out.menu[i].param)
-                ss << ' ' << menu_out.menu[i].param() << '\n';
-            else 
-                ss << "\033[K\n";
+            if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
+                ss << ' ' << menu_out.menu[i].param();
+            ss << "\033[K\n";
         }
     }
-    ss << "\033[0m";
+    ss << "\033[0m\n";
     ss << menu_out.post_show;
 
 
@@ -224,11 +224,51 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//=======================MainMenu======================
+
+MainMenu::MainMenu(File& f) : file(f){
+    LOG_INFO("Запуск конструктора MainMenu");
+    menu_out.total.col = 1;
+    menu_out.act = {0, 0};
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Файл данных: ", .param = [this](){return path_str();}}, //0
+        {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
+        {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
+        {.name = "Отменить изменения"},
+        {.name = "Сохранить"}, //4
+        {.name = "Сохранить как"},
+        {.name = "Выйти из программы"}, //6
+    };
+    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+                            "Клавишу Enter для выбора пункта меню";
+    menu_out.total.row = menu_out.menu.size();
+    menu_out.before_state = S::MainMenu;
+    displaySet(file.exist());
+}
+
+std::string MainMenu::path_str(){
+    if(!file.exist())
+        return "Выберите файл";
+    return pathToUtf8(file.getFilePath());
+}
+
+void MainMenu::displaySet(bool file_exist){
+    menu_out.menu[1].show = file_exist;
+    menu_out.menu[2].show = file_exist;
+    menu_out.menu[3].show = file_exist;
+    menu_out.menu[4].show = file_exist;
+    menu_out.menu[5].show = file_exist;
+}
+
+
+
 //=======================Viewer=======================
 
 Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
-    LOG_INFO("Текцщий фильтр: " + data.getFilterInf());
+    LOG_INFO("Текущий фильтр: " + data.getFilterInf());
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT - 1); // Общее количество колонок в меню
     menu_out.act = db_act; // Начальная активная позиция
@@ -397,11 +437,11 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
         // Item::Row: строка студента, не выбирается
         {.param = [this]() { return createString(); }, .enter = false },
 
-        {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
-        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  // после основного меню: то же меню, только с введённым полем
-        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
-        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
-        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
+        {.name = "Изменить", .state_aft = S::EditField },  
+        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  
+        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }},  
+        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer }, 
+        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  
         {.name = "Вернуться к просмотру полей", .state_aft = S::Viewer },
     };
 
@@ -747,3 +787,6 @@ std::string FindMenu::createString() {
     ss << "\033[K\n";
     return ss.str();
 }
+
+
+

@@ -97,6 +97,9 @@ namespace validate {
         return std::ispunct(static_cast<unsigned char>(c));
     }
 
+    bool noData(const std::string& s){
+        return s == vector_nodata;
+    }
     
     bool name(const std::string& s) { //Проверка фамилии
         if (s == "0") return true; // Выход в меню
@@ -104,9 +107,12 @@ namespace validate {
         if (!validUtf8(s)) return false;
         std::wstring w = fromUtf8(s);
 
+        if (noData(s))
+            return true;
+
         if (w.empty() || !isLatinUpper(w[0]) && !isCyrUpper(w[0]))
             return false;
-
+        
         // После первой буквы разрешены маленькие буквы и знаки -, _, '
         for (std::size_t i = 1; i < w.size(); ++i) {
             wchar_t c = w[i];
@@ -124,6 +130,9 @@ namespace validate {
 
         if (!validUtf8(s)) return false;
         std::wstring w = fromUtf8(s);
+
+        if (noData(s))
+            return true;
 
         if (w.empty()) return false;
 
@@ -143,6 +152,9 @@ namespace validate {
         if (!validUtf8(s)) return false;
         std::wstring w = fromUtf8(s);
 
+        if (noData(s))
+            return true;
+
         if (w.empty() || w[0] == L'-') return false;
 
         // Номер должен состоять только из цифр
@@ -158,6 +170,9 @@ namespace validate {
 
         if (!validUtf8(s)) return false;
         std::wstring w = fromUtf8(s);
+
+        if (noData(s))
+            return true;
 
         // Проверка длины пароля
         if (w.size() < PASS_MIN || w.size() >= PASS_MAX)
@@ -292,6 +307,9 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         LOG_ERROR("Выход за границы массива базы данных");
         return 0;
     }
+    if (str.empty()){
+        str = vector_nodata;
+    }
     if (!validate::check(col, str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
         return 0;
@@ -340,7 +358,7 @@ void DataBase::removeRow(size_t row) {
 }
 
 void DataBase::insertRow(size_t row) {
-    if (row > info.size() || row < 0) row = info.size();       // npos и лишние индексы → в конец
+    if (row > info.size()) row = info.size(); // Если указанная строка ввода больше массива, то это просто последняя строка
 
     // Референсная строка: та, перед которой вставляем (если она есть)
     std::string ref = (row < info.size()) ? info[row].name : "(конец списка)";
@@ -381,4 +399,35 @@ void DataBase::changeFilter(size_t col, std::string str, bool b) {
     filter_token = str;
     filter_col = col;
     show_filtered = b;
+}
+
+size_t DataBase::checkIntegrity() {
+    data_valid = true;
+
+    for (size_t i = 0; i < info.size(); ++i) {
+        const StudentInfo& student = info[i];
+
+        // Проверяем нумерацию строк
+        if (student.row != i + 1) {
+            data_valid = false;
+            LOG_ERROR("Нарушена нумерация строк: " +
+                      std::to_string(i));
+            return i;
+        }
+
+        // Проверяем корректность значений полей
+        if (!validate::check(Inf::name, student.name) ||
+            !validate::check(Inf::group, student.group) ||
+            !validate::check(Inf::num, student.num) ||
+            !validate::check(Inf::pass, student.pass)) {
+
+            data_valid = false;
+            LOG_ERROR("Обнаружены некорректные данные в строке: " +
+                      std::to_string(i + 1));
+            return i;
+        }
+    }
+
+    LOG_INFO("Проверка целостности базы данных пройдена");
+    return info.size();
 }
