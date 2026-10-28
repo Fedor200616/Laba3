@@ -17,7 +17,7 @@ enum class PathType {
     OtherFile,
     RootDir,
     BackDir,
-    EXE,
+    NONE,
     ERR
 };
 
@@ -52,21 +52,44 @@ public:
 
 struct DirectoryEntry {
     fs::path path;
+    PathType file_type = PathType::NONE;
+    bool real;
+    std::uintmax_t size;
+    std::filesystem::file_time_type last_write;
+    std::u8string name;
+    
+    DirectoryEntry(fs::path fp) : path(fp) {
+        init();
+    };
+    DirectoryEntry(fs::path f_path, PathType f_type) : path(f_path), file_type(f_type) {
+        init();
+    };
+
+    void init() {
+        real = type() != PathType::NONE && type() != PathType::ERR;
+        if (real) {
+            size = file_size(path);
+            last_write = last_write_time(path);
+            name = path.filename().u8string();
+        }
+    }
     PathType type(){
+        if (file_type != PathType::NONE)
+            return file_type;
         if(fs::is_directory(path)){
             return PathType::Folder;
         }
         else if (!fs::is_regular_file(path)) {
-            PathType::ERR;
+            return PathType::ERR;
         }
-        std::string ext = path.ex
-
-    }   
-    std::string name() {
-        return path.filename();
+        auto ext = path.extension();
+        if (ext == ".txt") return PathType::TXT;
+        else if (ext == ".csv") return PathType::CSV;
+        else return PathType::OtherFile;
     }
-    std::string typeEmoji(){
-        switch (type){
+    //Геттеры:
+    std::string typeEmoji() const{ //Получение эмодзи на основе типа
+        switch (file_type){
         case PathType::Folder:
             return "📁";
         case PathType::TXT:
@@ -79,13 +102,11 @@ struct DirectoryEntry {
             return "📂";
         case PathType::BackDir:
             return "⬆️";
-        case PathType::EXE:
-            return "⚙️";
         default:
             return "▫️";
         }
     }
-    std::string checkEmoji(bool checked = false){
+    std::string checkEmoji(bool checked = false) const{ // Получение эмодзи, что файл соответствует формату
         if (checked)
             return "✅";
         else
@@ -95,7 +116,9 @@ struct DirectoryEntry {
 
 class Explorer {
 private:
-    static constexp fs::path exe_filepath;
-    DirectoryEntry curr_path = exe_filepath;
+    const fs::path default_path;
+    DirectoryEntry curr_path;
+    std::vector<DirectoryEntry> files;
 
-}
+
+};

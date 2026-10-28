@@ -31,7 +31,7 @@ Application::Application(int argc, char* argv[])
 void Application::run() {
     // Первоначальная очистка экрана
     std::cout << "\033[2J\033[H";
-	StateType prev_state = MainMenu;
+	StateType prev_state = StateType::MainMenu;
     while (current_state != StateType::EXIT) {
 		system("cls"); // Очистка экрана для Windows
         StateType buf_state = current_state;
