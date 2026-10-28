@@ -31,10 +31,16 @@ Application::Application(int argc, char* argv[])
 void Application::run() {
     // Первоначальная очистка экрана
     std::cout << "\033[2J\033[H";
-	
+	StateType prev_state = MainMenu;
     while (current_state != StateType::EXIT) {
 		system("cls"); // Очистка экрана для Windows
+        StateType buf_state = current_state;
         switch (current_state) {
+        case StateType::MainMenu:{
+            MainMenu menu(file_manager);
+            current_state = menu.menuShow();
+            break;
+        }
         case StateType::Viewer:{ // Меню просмотра полей студентов
             Viewer viewer(students_info, db_act_pos);
             current_state = viewer.menuShow();
@@ -81,17 +87,18 @@ void Application::run() {
         case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";
-			std::cout << "Нажмите любую клавишу для выхода...";
+			std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";
 			input::getAnyKey();
-			current_state = StateType::EXIT;
+			current_state = StateType::MainMenu;
 			break;
         default:
 			LOG_ERROR("Неизвестное состояние: " + std::to_string(static_cast<int>(current_state)));
-            std::cout << "Произошло непредвиденное завершение работы\n";
-            std::cout << "Нажмите любую клавишу для выхода...";
+            std::cout << "Неизвестная ошибка\n";
+            std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";
             input::getAnyKey();
-			current_state = StateType::EXIT;
+			current_state = StateType::MainMenu;
             break;
         }
+        prev_state = buf_state;
     }
 }   

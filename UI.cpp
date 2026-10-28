@@ -234,7 +234,7 @@ MainMenu::MainMenu(File& f) : file(f){
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Файл данных: "}, //0
+        {.name = "Файл данных: ", .param = [this](){return path_str();}}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения"},
@@ -250,15 +250,9 @@ MainMenu::MainMenu(File& f) : file(f){
 }
 
 std::string MainMenu::path_str(){
-    std::string path = pathToUtf8(file.getFilePath);
-    bool sel = file.exist();
-    if(sel)
-        return path;
-    else{
-        displaySet(false);
+    if(!file.exist())
         return "Выберите файл";
-    }
-    return "";
+    return pathToUtf8(file.getFilePath);
 }
 
 void MainMenu::displaySet(bool file_exist){
