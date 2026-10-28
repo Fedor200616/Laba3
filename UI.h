@@ -125,10 +125,10 @@ public:
 private:
     File& file;
 
-    void displaySet(bool file_exist)
+    void displaySet(bool file_exist);
     std::string path_str();
 
-}
+};
 
 class NotVerMenu : public MenuLogic {
 public:

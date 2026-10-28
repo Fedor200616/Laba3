@@ -307,8 +307,8 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         LOG_ERROR("Выход за границы массива базы данных");
         return 0;
     }
-    if (str.empty() <= 0){
-        std = vector_nodata;
+    if (str.empty()){
+        str = vector_nodata;
     }
     if (!validate::check(col, str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);

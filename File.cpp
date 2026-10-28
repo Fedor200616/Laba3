@@ -71,7 +71,7 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i, cha
 }
 
 // импорт массива данных из файла
-std::vector<StudentInfo> File::loadFromFile() {
+std::vector<StudentInfo> File::loadFromFile(){
     std::vector<StudentInfo> result;
 	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
     bool sep_change = 0; // Флаг смены разделителя, если 1 раз сменился, то не , и не | , то ошибка

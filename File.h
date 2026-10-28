@@ -42,8 +42,8 @@ public:
     File() {}
 
     std::vector<StudentInfo> loadFromFile();
-    fs::path getFilePath(){return filePath;};
-    bool exist();
+    fs::path getFilePath() const {return filePath;}
+    bool exist() const { return !filePath.empty(); }
     
     bool isModified() const {
         return is_modified;
@@ -56,7 +56,6 @@ struct DirectoryEntry {
     bool real;
     std::uintmax_t size;
     std::filesystem::file_time_type last_write;
-    std::u8string name;
     
     DirectoryEntry(fs::path fp) : path(fp) {
         init();
@@ -66,12 +65,23 @@ struct DirectoryEntry {
     };
 
     void init() {
-        real = type() != PathType::NONE && type() != PathType::ERR;
-        if (real) {
-            size = file_size(path);
-            last_write = last_write_time(path);
-            name = path.filename().u8string();
+        real = type() != PathType::NONE &&
+            type() != PathType::ERR;
+        if (!real) //Если странный файл, то и смысла остального нет
+            return;
+        std::error_code ec; //Отладка ошибок
+        last_write = fs::last_write_time(path, ec);
+        if (ec)
+            last_write = {};
+        if (type() == PathType::Folder) { // Для папки путь берем за 0
+            size = 0;
+            return;
         }
+
+        size = fs::file_size(path, ec);
+
+        if (ec)
+            size = 0;
     }
     PathType type(){
         if (file_type != PathType::NONE)
@@ -117,8 +127,10 @@ struct DirectoryEntry {
 class Explorer {
 private:
     const fs::path default_path;
-    DirectoryEntry curr_path;
+    fs::path curr_path;
     std::vector<DirectoryEntry> files;
-
+public:
+    explicit Explorer(const fs::path& startPath)
+        : curr_path(startPath) {}
 
 };

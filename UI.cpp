@@ -147,13 +147,12 @@ std::string MenuLogic::showUI() {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
             ss << menu_out.menu[i].name;
-            if (menu_out.menu[i].param)
-                ss << ' ' << menu_out.menu[i].param() << '\n';
-            else 
-                ss << "\033[K\n";
+            if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
+                ss << ' ' << menu_out.menu[i].param();
+            ss << "\033[K\n";
         }
     }
-    ss << "\033[0m";
+    ss << "\033[0m\n";
     ss << menu_out.post_show;
 
 
@@ -252,7 +251,7 @@ MainMenu::MainMenu(File& f) : file(f){
 std::string MainMenu::path_str(){
     if(!file.exist())
         return "Выберите файл";
-    return pathToUtf8(file.getFilePath);
+    return pathToUtf8(file.getFilePath());
 }
 
 void MainMenu::displaySet(bool file_exist){
