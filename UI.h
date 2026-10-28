@@ -120,10 +120,10 @@ protected:
 
 class MainMenu : public MenuLogic {
 public:
-    MainMenu(AppConfig app);
+    MainMenu(AppConfig& app);
 
 private:
-    AppConfig app_info;
+    AppConfig& app_info;
 
 
 }

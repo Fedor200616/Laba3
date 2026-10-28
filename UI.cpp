@@ -224,11 +224,33 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//=======================MainMenu======================
+
+MainMenu::MainMenu(AppConfig& app) : app_info(app){
+    LOG_INFO("Запуск конструктора MainMenu");
+    menu_out.total.col = 1;
+    menu_out.act = {0, 0};
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Файл данных: "},
+        {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
+        {.name = "Меню поиска", .state_aft = S::FindMenu},
+        {.name = "Отменить изменения"},
+        {.name = "Сохранить"},
+        {.name = "Сохранить как"},
+    };
+
+    
+}
+
+
+
 //=======================Viewer=======================
 
 Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
-    LOG_INFO("Текцщий фильтр: " + data.getFilterInf());
+    LOG_INFO("Текущий фильтр: " + data.getFilterInf());
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT - 1); // Общее количество колонок в меню
     menu_out.act = db_act; // Начальная активная позиция
