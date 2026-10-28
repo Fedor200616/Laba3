@@ -3,6 +3,9 @@
 #include <string>
 #include "Log.h"
 
+const std::string file_nodata = "Нет данных";
+const std::string vector_nodata = "";
+
 // Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
     unsigned int row;
@@ -30,6 +33,7 @@ namespace validate {
     inline bool isPunct(unsigned char c);
 
     // Проверка полей
+    bool noData(const std::string& s); // Если поле пустое, то оно все еще корректно
     bool name(const std::string& s);
     bool group(const std::string& s);
     bool groupNum(const std::string& s);
