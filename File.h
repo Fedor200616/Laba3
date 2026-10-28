@@ -10,10 +10,14 @@
 
 namespace fs = std::filesystem;
 
-enum class fileType {
-    NONE,
+enum class PathType {
+    Folder,
     TXT,
     CSV,
+    OtherFile,
+    RootDir,
+    BackDir,
+    EXE,
     ERR
 };
 
@@ -23,7 +27,7 @@ enum class fileType {
 class File {
 private:
     fs::path filePath = ""; // путь к файлу
-    fileType type = fileType::NONE; // тип файла
+    PathType type = PathType::NONE; // тип файла
     bool is_modified = false; // Был ли модифицирован файл
 
     StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
@@ -38,13 +42,60 @@ public:
     File() {}
 
     std::vector<StudentInfo> loadFromFile();
-    bool saveToFile(const std::vector<StudentInfo>& Info);
-    bool createBackup(const fs::path& main_path, const std::vector<StudentInfo>& Info);
-    bool removeBackup(const fs::path& main_path);
+    fs::path getFilePath(){return filePath;};
+    bool exist();
     
-
     bool isModified() const {
         return is_modified;
     }
 };
 
+struct DirectoryEntry {
+    fs::path path;
+    PathType type(){
+        if(fs::is_directory(path)){
+            return PathType::Folder;
+        }
+        else if (!fs::is_regular_file(path)) {
+            PathType::ERR;
+        }
+        std::string ext = path.ex
+
+    }   
+    std::string name() {
+        return path.filename();
+    }
+    std::string typeEmoji(){
+        switch (type){
+        case PathType::Folder:
+            return "📁";
+        case PathType::TXT:
+            return "📝";
+        case PathType::CSV:
+            return "📑";
+        case PathType::OtherFile:
+            return "📄";
+        case PathType::RootDir:
+            return "📂";
+        case PathType::BackDir:
+            return "⬆️";
+        case PathType::EXE:
+            return "⚙️";
+        default:
+            return "▫️";
+        }
+    }
+    std::string checkEmoji(bool checked = false){
+        if (checked)
+            return "✅";
+        else
+            return "";
+    }
+};
+
+class Explorer {
+private:
+    static constexp fs::path exe_filepath;
+    DirectoryEntry curr_path = exe_filepath;
+
+}

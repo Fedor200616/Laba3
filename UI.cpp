@@ -1,100 +1,6 @@
 #include "UI.h"
 #include "Student.h"
 
-namespace input {
-    bool getAnyKey() {
-        while (_getch() == static_cast<int>(key::Extended)) {}
-        return true;
-    }
-
-    key getKey(int ch) {
-
-        // Если считн служебный байт стрелок/расширенных клавиш (0 или 224)
-        if (ch == 0 || ch == static_cast<int>(key::Extended)) {
-            ch = _getch(); // Читаем второй байт с реальным кодом стрелки
-        }
-
-        // Преобразуем код в enum
-        switch (ch) {
-        case static_cast<int>(key::Up):    return key::Up;
-        case static_cast<int>(key::Down):  return key::Down;
-        case static_cast<int>(key::Left):  return key::Left;
-        case static_cast<int>(key::Right): return key::Right;
-        case static_cast<int>(key::Enter): return key::Enter;
-        case static_cast<int>(key::Esc):   return key::Esc;
-        case static_cast<int>(key::Tab):   return key::Tab;
-        default:                           return key::Null;
-        }
-    }
-}
-
-namespace UI {
-    size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
-    {
-        size_t count = 0;
-
-        for (unsigned char c : str)
-        {
-            if ((c & 0xC0) != 0x80) // Если старшие два бита не равны 10, значит это начало нового символа
-                ++count;
-        }
-
-        return count;
-    }
-
-    std::string padRight(const std::string& str, size_t width) // Функция для выравнивания строки по ширине, учитывая UTF-8 символы
-    {
-        size_t length = utf8Length(str);
-
-        if (length >= width)
-            return str;
-
-        return str + std::string(width - length, ' ');
-    }
-
-    /// <summary>
-    /// Вывод на экран отдельной ячейки
-    /// </summary>
-    /// <param name="ss">поток ввода</param>
-    /// <param name="value">текст</param>
-    /// <param name="width">Ширина ячейки</param>
-    /// <param name="active">Активна ли ячейка</param>
-    void addCell(
-        std::ostringstream& ss,
-        const std::string& value,
-        size_t width,
-        bool active)
-    {
-        if (active)
-            ss << "\033[30;47m";
-
-        ss << " "
-            << padRight(value, width)
-            << " ";
-
-        if (active)
-            ss << "\033[0m";
-
-        ss << "|";
-    }
-
-    std::string header(int num_width, StudentDB& data)
-    {
-        std::ostringstream ss;
-        ss << " "; // Без этого шапка сьезжает на 1 символ влево
-        for(int i = 0; i < data.INFO_COL_COUNT; i++){
-            addCell(
-                ss,
-                data.HEADER[i],
-                data.getWidthVec()[i],
-                false
-            );
-        }
-        ss << '\n';
-        return ss.str();
-    }
-}
-
 namespace UI {
     size_t utf8Length(const std::string& str) //Узнаем длину строки в символах, а не в байтах, для корректного отображения русских букв
     {
@@ -166,12 +72,12 @@ namespace UI {
     {
         std::ostringstream ss;
         ss << " "; // Без этого шапка сьезжает на 1 символ влево
+        const auto widths = data.getWidthVec();
         for(int i = 0; i < data.INFO_COL_COUNT; i++){
             addCell(
                 ss,
                 data.HEADER[i],
-                data.getWidthVec()[i],
-                false
+                widths[i]
             );
         }
         return ss.str();
@@ -234,14 +140,15 @@ std::string MenuLogic::showUI() {
 
     std::ostringstream ss;
 	ss << "\033[0m"; // Сброс цвета и стиля
-    ss << menu_out.before_show << '\n'; //Отображение шапки
+    if(!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
+        ss << menu_out.before_show << '\n'; //Отображение шапки
 
     for (size_t i = 0; i < menu_out.total.row; i++) {
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
         if (menu_out.menu[i].show) {
             ss << menu_out.menu[i].name;
-            if 
-                (menu_out.menu[i].param) ss << ' ' << menu_out.menu[i].param() << '\n';
+            if (menu_out.menu[i].param)
+                ss << ' ' << menu_out.menu[i].param() << '\n';
             else 
                 ss << "\033[K\n";
         }
@@ -318,10 +225,51 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//=======================MainMenu======================
+
+MainMenu::MainMenu(File& f) : file(f){
+    LOG_INFO("Запуск конструктора MainMenu");
+    menu_out.total.col = 1;
+    menu_out.act = {0, 0};
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Файл данных: ", .param = [this](){return path_str();}}, //0
+        {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
+        {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
+        {.name = "Отменить изменения"},
+        {.name = "Сохранить"}, //4
+        {.name = "Сохранить как"},
+        {.name = "Выйти из программы"}, //6
+    };
+    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+                            "Клавишу Enter для выбора пункта меню";
+    menu_out.total.row = menu_out.menu.size();
+    menu_out.before_state = S::MainMenu;
+    displaySet(file.exist());
+}
+
+std::string MainMenu::path_str(){
+    if(!file.exist())
+        return "Выберите файл";
+    return pathToUtf8(file.getFilePath);
+}
+
+void MainMenu::displaySet(bool file_exist){
+    menu_out.menu[1].show = file_exist;
+    menu_out.menu[2].show = file_exist;
+    menu_out.menu[3].show = file_exist;
+    menu_out.menu[4].show = file_exist;
+    menu_out.menu[5].show = file_exist;
+}
+
+
+
 //=======================Viewer=======================
 
 Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     LOG_INFO("Запуск конструктора Viewer");
+    LOG_INFO("Текущий фильтр: " + data.getFilterInf());
     menu_out.total.row = data.size(); // Устанавливаем общее количество строк в меню
     menu_out.total.col = static_cast<size_t>(data.INFO_COL_COUNT - 1); // Общее количество колонок в меню
     menu_out.act = db_act; // Начальная активная позиция
@@ -346,26 +294,41 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
-    menu_out.menu.resize(data.size());
+    if (data.sizeIfFilter() <= 0) {
+        LOG_WARN("Нет полей соответсвующих фильтру");
+        data.changeFilter(false);
+    }
 
+    menu_out.menu.resize(data.sizeIfFilter()); //делаем заренее размер массива
+
+    if (menu_out.menu.size() <= 0) {
+        LOG_ERROR("Размер базы = 0");
+        return;
+    }
+    size_t _row = 0;
     for (size_t i = 0; i < data.size(); ++i)
     {
-        menu_out.menu[i].name = "";
+        if (data.isOnfilter() && !data.inFilter(i)) { // если данные фильтруются и поле не совпало
+            continue;
+        }
+        
+        menu_out.menu[_row].name = "";
 
-        menu_out.menu[i].param =
+        menu_out.menu[_row].param =
             [this, i]() {
             return createString(i);
             };
 
-        menu_out.menu[i].show = false;
-        menu_out.menu[i].enter = true;
+        menu_out.menu[_row].show = false;
+        menu_out.menu[_row].enter = true;
 
-		menu_out.menu[i].state_aft = StateType::EditMenu;
+		menu_out.menu[_row].state_aft = StateType::EditMenu;
+        _row++;
     }
 
     menu_out.ActMark = "";
     menu_out.InactMark = "";
-    
+    menu_out.before_state = StateType::MainMenu;
 };
 
 std::string Viewer::createString(size_t row)
@@ -419,6 +382,50 @@ bool Viewer::beforeShow() {
     return true;
 }
 
+StateType Viewer::handleNav() {
+    if (menu_out.tab_ent) {
+        return StateType::ViewerTab;
+    }
+    else {
+        return MenuLogic::handleNav();
+    }
+}
+
+//=======================ViewerTab=======================
+ViewerTab::ViewerTab(DataBase& db) : data(db) {
+    LOG_INFO("Запуск конструктора ViewerTab");
+
+    using S = StateType;
+    menu_out.menu = {
+        {.name = "Найти поле", .state_aft = S::FindMenu},
+        {.name = "Найти и заменить поля", .state_aft = S::ReplaceAll},
+        {.name = "Фильтр строк ", .param = [this]() {return data.getFilterInf(); } ,.state_aft = S::FilterMenu},
+        {.name = "Отображение с фильтром", .param = [this]() {return filterShow(); }, .act_aft = [this]() {data.changeFilter(); }},
+    };
+    menu_out.before_show = "Выберите действие с просмотром данных";
+    menu_out.post_show = "\n"
+        "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
+        "Нажмите Tab для возврата к просмотру данных, ESC для возврата в главное меню";
+    menu_out.total.row = menu_out.menu.size();
+    menu_out.before_state = S::Viewer;
+}
+
+std::string ViewerTab::filterShow() {
+    if (data.isOnfilter())
+        return "(Включено)";
+    else
+        return "(Выключено)";
+}
+
+StateType ViewerTab::handleNav() {
+    if (menu_out.tab_ent) {
+        return StateType::Viewer;
+    }
+    else {
+        return MenuLogic::handleNav();
+    }
+}
+
 //=======================EditMenu=======================
 
 EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
@@ -426,16 +433,16 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
     is_mod = false;
 
     using S = StateType;
-    if (data.size() < 1) addStr(AddType::End);
+    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
     menu_out.menu = {
         // Item::Row: строка студента, не выбирается
         {.param = [this]() { return createString(); }, .enter = false },
 
-        {.name = "Изменить", .state_aft = S::EditField },   // делаем сейчас
-        {.name = "Заменить все поля с данным именем", .state_aft = S::EditAllField},  // после основного меню: то же меню, только с введённым полем
-        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }, .state_aft = StateType::Viewer},  // легко, на уровне DataBase
-        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer },  // легко
-        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  // легко
+        {.name = "Изменить", .state_aft = S::EditField },  
+        {.name = "Заменить все поля с данным именем", .state_aft = S::ReplaceAll},  
+        {.name = "Удалить строку", .act_aft = [this]() {deleteRow(); }},  
+        {.name = "Добавить строку сверху", .act_aft = [this]() {addStr(AddType::Before); }, .state_aft = StateType::Viewer }, 
+        {.name = "Добавить строку снизу", .act_aft = [this]() {addStr(AddType::After); }, .state_aft = StateType::Viewer },  
         {.name = "Вернуться к просмотру полей", .state_aft = S::Viewer },
     };
 
@@ -473,6 +480,7 @@ std::string EditMenu::createString()
 
 bool EditMenu::beforeShow() {
 	bool res = MenuLogic::beforeShow();
+    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
 	if (data.empty()) {
 		LOG_ERROR("В файле данных о студентах нет записи");
 		std::cout << "Нет данных для отображения.\n";
@@ -484,7 +492,7 @@ bool EditMenu::beforeShow() {
             "Выберите поле в таблице.\n"
             "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
             "Нажмите ESC для возврата в меню просмотра";
-		menu_out.act.row = -1; // Если мы редактируем поле, то активная строка - это строка с полем
+		menu_out.act.row = -1; // Прикооол, оно unsigned, но подразумевается что это такое большое число, что оно точно не будет пунктом меню
     }
     else {
         pos.col = menu_out.act.col;
@@ -509,7 +517,7 @@ StateType EditMenu::handleNav() {
         case MenuNav::KeyTab:
         case MenuNav::Enter:
             LOG_INFO("Нажатие Таба");
-            system("cls"); //Иначе текст наславиается
+            system("cls"); //Иначе текст наслаивается
             menu_out.tab_ent = !menu_out.tab_ent;
 			menu_out.act.row = 1; // Возвращаем активную строку на первую строку меню, 0 - это строка с полем
             break;
@@ -532,7 +540,6 @@ StateType EditMenu::handleNav() {
             break;
         }
     }
-
 
 	return StateType::NONE;
 }
@@ -596,8 +603,13 @@ std::string EditField::createString() {
 StateType EditField::handleNav() {
     switch (input_line.handle(input::readKeyEvent())) {
     case input::TextInput::Result::Accepted:
-        data.setField(pos.row, pos.col + 1, input_line.text());
-        LOG_INFO("Поле изменено");
+        if (data.setField(pos.row, pos.col + 1, input_line.text())) {
+            LOG_INFO("Поле изменено");
+        }
+        else {
+             NotVerMenu ver_menu(input_line.text(), pos.col + 1);
+             ver_menu.menuShow();
+        }
         return StateType::EditMenu;
     case input::TextInput::Result::Cancelled:
         return StateType::EditMenu;
@@ -606,37 +618,36 @@ StateType EditField::handleNav() {
     }
 }
 
-//======================EditAllField============================
+//======================FindMenuLogic============================
 
-EditAllField::EditAllField(DataBase& d, Position& p) : data(d), pos(p), field_int(p.col + 1) {
+FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, StateType before_state) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
     
-
     using S = StateType;
     menu_out.menu = {
         {.name = "Поле: ", .param = [this]() {return line(0, field); }, .act_aft = [this]() {changeField(); }},
         {.name = "Найти: ", .param = [this]() {return line(1, find_str); }, .act_aft = [this]() { startInput(); }},
         {.name = "Заменить на: ", .param = [this]() {return line(2, repl_str); }, .act_aft = [this]() { startInput(); }},
         {.name = "Найдено совпадений: ", .param = [this]() {return std::to_string(match()); }, .enter = false },
-        {.name = "Заменить ", .act_aft = [this]() {data.editAllFind(field_int, find_str, repl_str); }} // Добавить функцию замены
+        {.name = "Заменить ", .act_aft = [this]() {editAll(); }} // Добавить функцию замены
     };
     menu_out.total = { menu_out.menu.size(), static_cast<size_t>(data.INFO_COL_COUNT - 1) };
-    menu_out.before_state = StateType::Viewer;
+    menu_out.before_state = before_state;
 }
 
-size_t EditAllField::match() const {
+size_t FindMenuLogic::match() const {
     std::string rt_find = (typing && menu_out.act.row == 1) ? input_line.text() : find_str;
     return data.getFilterHit(field_int, rt_find).size(); 
 }
 
-std::string EditAllField::line(size_t item, const std::string& value) const {
+std::string FindMenuLogic::line(size_t item, const std::string& value) const {
     bool editing = typing && menu_out.act.row == item;
     return (editing ? input_line.display() : value) + "\033[K";
 }
 
-void EditAllField::startInput() {
+void FindMenuLogic::startInput() {
     if (typing) {
         LOG_WARN("Вызов функции начала ввода, хотя ввод уже производится");
         return;
@@ -660,7 +671,7 @@ void EditAllField::startInput() {
     system("cls"); //Возможно наложение текста
 }
 
-void EditAllField::changeField() {
+void FindMenuLogic::changeField() {
     if (pos.col + 1 < data.INFO_COL_COUNT - 1) {
         ++pos.col;
     }
@@ -670,11 +681,20 @@ void EditAllField::changeField() {
 
     field_int = pos.col + 1;
     field = data.HEADER[field_int];
-    //find_str = data.getField(pos.row, field_int);
     system("cls"); //Происходит наложение текста
 }
 
-bool EditAllField::beforeShow() {
+void FindMenuLogic::editAll(){
+    if (!data.editAllFind(field_int, find_str, repl_str)) {
+        NotVerMenu ver_menu(input_line.text(), pos.col + 1);
+        ver_menu.menuShow();
+    }
+    else
+        LOG_INFO("Поля изменены");
+}
+
+bool FindMenuLogic::beforeShow() {
+    system("cls");
     if (typing)
         menu_out.ActMark = "\033[0m";
     else 
@@ -682,7 +702,7 @@ bool EditAllField::beforeShow() {
     return MenuLogic::beforeShow();
 }
 
-StateType EditAllField::handleNav() {
+StateType FindMenuLogic::handleNav() {
     if (!typing) return MenuLogic::handleNav();      // обычная навигация по пунктам
 
     switch (input_line.handle(input::readKeyEvent())) {
@@ -690,7 +710,6 @@ StateType EditAllField::handleNav() {
         *target = input_line.text();
         typing = false;
         target = nullptr;
-
         break;
     case input::TextInput::Result::Cancelled:        // Esc отменяет только ввод, из меню не выходит
         typing = false;
@@ -701,3 +720,74 @@ StateType EditAllField::handleNav() {
     }
     return StateType::NONE;
 }
+
+//==========================ReplaceMenu================================
+ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s){
+    menu_out.act.row = 2;
+}
+
+//==========================FilterMenu================================
+FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+    field_int = data.getFilterCol();
+    find_str = data.getFilterStr();
+    menu_out.menu[1].name = "Фильтр по тексту";
+    menu_out.menu[2].show = false;
+    menu_out.menu[4].name = "Применить фильтр";
+    menu_out.menu[4].act_aft = [this]() {return data.changeFilter(field_int, find_str, true); };
+    menu_out.menu[4].state_aft = StateType::ViewerTab;
+    menu_out.before_state = StateType::ViewerTab;
+}
+
+//==========================FindMenu================================
+FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+    pos_of_find = { p.row, p.col };
+    menu_out.menu[2].show = false;
+    menu_out.menu[4].name = "";
+    menu_out.menu[4].param = [this]() { return createString(); };
+    menu_out.menu[4].act_aft = [this]() { pos = pos_of_find; };   // перейти к найденной строке
+    menu_out.menu[4].state_aft = StateType::Viewer;
+    menu_out.before_state = StateType::Viewer;
+}
+
+bool FindMenu::beforeShow() {
+    bool res = FindMenuLogic::beforeShow();
+    std::string rt_find = (typing && menu_out.act.row == 1) ? input_line.text() : find_str;
+
+    std::vector<size_t> hits = data.getFilterHit(field_int, rt_find);
+    menu_out.total.col = hits.size();
+
+    if (hits.empty()) {
+        menu_out.menu[4].show = false;
+        menu_out.act.col = 0;
+        pos_of_find.row = pos.row;            // оставляем прежнюю позицию
+    }
+    else {
+        menu_out.menu[4].show = true;
+        if (menu_out.act.col >= hits.size())
+            menu_out.act.col = hits.size() - 1;
+        pos_of_find.row = hits[menu_out.act.col];
+    }
+    pos_of_find.col = field_int - 1;          // без колонки "#"
+
+    return res;
+}
+
+Position FindMenu::getPos() {
+    return pos_of_find;
+}
+
+std::string FindMenu::createString() {
+    std::ostringstream ss;
+    for (size_t i = 0; i < static_cast<size_t>(data.INFO_COL_COUNT); i++) {
+        UI::addCell(
+            ss,
+            data.getField(pos_of_find.row, i),
+            data.getWidthVec()[i]
+        );
+    }
+    ss << "\033[K\n";
+    return ss.str();
+}
+
+
+

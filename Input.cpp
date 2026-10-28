@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <conio.h>
 
-namespace {
+namespace Encoding {
     std::string toUtf8(const std::wstring& w) { //Функция перевода широких строк  в обычные в utf8
         if (w.empty()) return {};
         int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
@@ -19,6 +19,8 @@ namespace {
         return w;
     }
 }
+
+using namespace Encoding;
 
 namespace input {
     /// <summary>
