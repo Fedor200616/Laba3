@@ -11,7 +11,9 @@ inline std::string pathToUtf8(const fs::path& p) {
     std::u8string u8 = p.u8string(); // Получаем путь в кодировке UTF-8
     return std::string(u8.begin(), u8.end()); //Проходимся побайтово от начала до конца
 } 
-
+inline fs::path utf8ToPath(const std::string& s) { // Обратная к pathToUtf8: UTF-8 строка -> путь
+    return fs::path(std::u8string(s.begin(), s.end()));
+}
 //Синглтон, обьект один
 
 class Log {

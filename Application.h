@@ -19,10 +19,13 @@ private:
     Info app_info;
     File file_manager;
     DataBase students_info;
+    Explorer explorer;
 
     bool start_with_path = false;
 
 	Position db_act_pos; // Позиция активного элемента в данных
+
+    DirectoryEntry selEntry; //Файл, который выбралы для Таб меню
 
 public:
     Application(int argc, char* argv[]);

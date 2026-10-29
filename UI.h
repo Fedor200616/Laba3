@@ -295,3 +295,86 @@ private:
     bool beforeShow() override;
 };
 
+//=============================Меню проводника и его наследники====================
+
+class ExplorerMenuLogic : public MenuLogic {
+protected:
+    static constexpr size_t NAME_WIDTH = 36;// Ограничения чтобы оно не ломало таблицу
+    static constexpr size_t MOD_TIME_WIDTH = 16; // 31.08.2026 19:28 -> 2*6 чисел + 4 разделителя
+    static constexpr size_t SIZE_WIDTH = 12;
+    static constexpr size_t ICON_WIDTH = 2;
+    static constexpr size_t CELL_PADDING = 3; // UI::addCell() добавляет по одному пробелу с каждой стороны
+    const size_t FULL_WIDTH = NAME_WIDTH + MOD_TIME_WIDTH + SIZE_WIDTH + CELL_PADDING * 3;
+    static constexpr size_t MENU_SHOW_LENGTH = 20;
+    static constexpr size_t MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
+    
+    DirectoryEntry selected_file;
+    Explorer explorer;
+    std::vector<DirectoryEntry> entries;
+    
+    // переменные ниже использовать только после beforeShow()
+    size_t first_row = 0;
+    size_t last_row = MENU_SHOW_LENGTH;
+    size_t real_total = 0;
+    size_t real_act = 0;
+    bool beforeShow() override;
+    StateType handleNav() override;
+
+    std::string createFileStr(size_t index);
+    void select(size_t i);
+    bool to_show(PathType type) {
+        switch (type) {
+        case PathType::HIDE:
+        case PathType::OtherFile:
+        case PathType::ERR:
+        case PathType::NONE:
+            return false;
+        default:
+            return true;
+        }
+    }
+    std::string beforeStr();
+    void aftEnter();
+
+public:
+    explicit ExplorerMenuLogic(DirectoryEntry sel); //explicit запрещает преобразования типов
+    DirectoryEntry getSelFile() { return selected_file; }
+    fs::path getLastPath() { return explorer.currentPath(); }
+    DirectoryEntry getTabEntry() const; // Файл TXT/CSV под курсором, а если его нет - текущая папка
+    void goToDir(const fs::path& p); // Перейти в папку (или в папку файла)
+};
+
+
+class ExplorerTabLogic : public MenuLogic {
+private:
+    static constexpr size_t LINE_WIDTH = 60; // Ширина рамки шапки
+    static constexpr size_t NAME_LEN = 30; // Максимальная длина вводимого имени
+    static constexpr size_t INPUT_ROW = 6; // Пункт меню, в котором рисуется ввод или подтверждение
+
+    DirectoryEntry selected_file;
+    Explorer explorer;
+
+    size_t action = 0; // Пункт меню, из которого начат ввод (0 - TXT, 1 - CSV, 3 - переименование, 4 - копия)
+    bool typing = false; // Идет ввод имени
+    bool confirm = false; // Ждем подтверждения удаления
+    std::string message = ""; // Результат последнего действия
+    bool message_error = false;
+    input::TextInput input_line;
+
+    bool isFile() const;
+    std::string headStr() const; // Шапка с путем
+    std::string inputStr() const; // Рамка ввода или вопрос об удалении
+    std::string postStr() const; // Результат действия и подсказки по клавишам
+    std::string fullName(const std::string& name) const; // Имя с нужным расширением
+    std::string checkName(const std::string& full) const; // Пустая строка, если имя подходит
+
+    void startInput(size_t row, const std::string& start_text);
+    void applyInput(const std::string& full);
+    void deleteSel();
+
+    bool beforeShow() override;
+    StateType handleNav() override;
+public:
+    explicit ExplorerTabLogic(DirectoryEntry sel);
+};
+

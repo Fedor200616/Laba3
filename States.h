@@ -2,7 +2,8 @@
 
 enum class StateType {
     MainMenu,
-    Explorer,
+    OpenExplorer,
+    OpenExplorerTabLogic,
     SaveDialog,
     ExitDialog,
 
@@ -14,6 +15,8 @@ enum class StateType {
     ReplaceAll, // меню изменения всех полей в таблице с тем же названием
     FilterMenu, // Меню изменения параметров фильтра
     FindMenu, // Меню поиска студента
+
+    ExplorerOutFile, //Выбранный файл подходит по формату
 
     EXIT,
 

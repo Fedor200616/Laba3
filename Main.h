@@ -10,7 +10,7 @@
 namespace fs = std::filesystem;
 
 struct AppConfig {
-    fs::path filePath; //Путь к файлу данных
+    fs::path filePath; //Путь к файлу данных из аргументов
     bool do_log = false;
     std::string arg_str;
 

@@ -4,7 +4,8 @@
 //Конструктор главного управленца
 Application::Application(int argc, char* argv[])
     : app_info(argc, argv),
-    file_manager(app_info.getStartPath()) {
+    file_manager(app_info.getStartPath()),
+    explorer(app_info.getStartPath()){
     Log::getInstance().init(
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
@@ -13,7 +14,7 @@ Application::Application(int argc, char* argv[])
 	std::string log_message = "Приложение запущено с аргументами: " + pathToUtf8(app_info.getConfig().arg_str); 
 
     LOG_INFO(log_message);
-
+    
     fs::path start_path = app_info.getStartPath();
     if (!start_path.empty() && fs::exists(start_path)) { // Импортируем файл, если он указан в флагах запуска
         auto loaded_students = file_manager.loadFromFile(); 
@@ -25,6 +26,7 @@ Application::Application(int argc, char* argv[])
     else {
     }
     db_act_pos = { 0, 0 };
+
 }
 
 // Основная функция обработки состояний
@@ -38,6 +40,46 @@ void Application::run() {
         switch (current_state) {
         case StateType::MainMenu:{
             MainMenu menu(file_manager);
+            current_state = menu.menuShow();
+            break;
+        }
+        case StateType::OpenExplorer: {
+            static fs::path path_buf = file_manager.getFilePath();
+            if (path_buf.empty()) path_buf = app_info.getExe();
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(path_buf));
+            ExplorerMenuLogic menu(path_buf);
+            if (!selEntry.path.empty())
+                menu.goToDir(selEntry.path); // Возвращаемся в папку, где были (в том числе после меню Tab)
+            current_state = menu.menuShow();
+            if (current_state == StateType::ExplorerOutFile) {
+                bool norm = true;
+                File buf(menu.getSelFile());
+                if (buf.exist() && buf.checkHeader()) {
+                    if (file_manager.setFile(menu.getSelFile())) {
+                        auto loaded_students = file_manager.loadFromFile();
+                        students_info.load(loaded_students);
+
+                        db_act_pos = { 0, 0 };
+                        current_state = StateType::MainMenu;
+                        path_buf = buf.getFilePath();
+                    }
+                }
+                else {
+                    LOG_ERROR("Выбранный файл не существует или имеет неверную шапку");
+                    std::cout << "\nНеверный формат файла! Выберите другой.\n";
+                    input::getAnyKey();
+                    current_state = buf_state;
+                }
+            }
+            if (current_state == StateType::OpenExplorerTabLogic)
+                selEntry = menu.getTabEntry(); // файл под курсором или текущая папка
+            else
+                selEntry = menu.getLastPath();
+            break;
+        }
+        case StateType::OpenExplorerTabLogic: {
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(selEntry.path));
+            ExplorerTabLogic menu(selEntry);
             current_state = menu.menuShow();
             break;
         }
@@ -102,3 +144,4 @@ void Application::run() {
         prev_state = buf_state;
     }
 }   
+
