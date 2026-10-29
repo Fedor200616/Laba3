@@ -156,6 +156,7 @@ StateType MenuLogic::menuShow()
 			LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
 			return StateType::_ERROR;
 		}
+        while (!menu_out.menu[menu_out.act.row].show) menu_out.act.row++;
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
@@ -820,21 +821,59 @@ std::string FindMenu::createString() {
 ExplorerMenuLogic::ExplorerMenuLogic(Explorer& exp) : explorer(exp), entries(explorer.fileArr()) {
     menu_out.before_show = "";
     menu_out.total = { entries.size(), 1 };
-    for (size_t i = 0; i < entries.size(); ++i) {
-        menu_out.menu.push_back({ .name = "", 
-            .param = [this, i]() {return createFileStr(i); }, 
-            .act_aft = [this, i]() {select(i); } 
-        });
-    }
     menu_out.post_show = "";
     menu_out.before_state = StateType::MainMenu;
+}
+
+bool ExplorerMenuLogic::beforeShow() {
+    windowSize();
+    entries = explorer.fileArr();
+    menu_out.total = { entries.size(), 1 };
+    menu_out.menu.clear();
+    size_t real_act = 0; //Позиция указателя с учетом скрытых пунктов
+    size_t real_total = 0;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        menu_out.menu.push_back({ .name = "",
+            .param = [this, i]() {return createFileStr(i); },
+            .act_aft = [this, i]() {select(i); },
+            .show = to_show(entries[i].type())
+            });
+        if(i < menu_out.act.row && menu_out.menu[i].show) ++real_act;
+        if(menu_out.menu[i].show) ++real_total;
+        
+    }
+    static size_t first_row = 0;
+
+    //делаем прокрутку через отображение некотороых пунктов
+    if (real_act < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
+        first_row = 0;
+    }
+    else if (real_act >= first_row + MENU_SHOW_LENGTH - MENU_NUM_TO_SHOW) { // Если активная строка внизу, то прокручиваем вниз
+        first_row = min(real_act - MENU_SHOW_LENGTH + MENU_NUM_TO_SHOW, real_total - MENU_SHOW_LENGTH);
+    }
+    else if (real_act <= first_row + MENU_NUM_TO_SHOW) {
+        first_row = max(real_act - MENU_NUM_TO_SHOW, 0);
+    }
+
+    size_t last_row = min(first_row + MENU_SHOW_LENGTH, real_total); // Либо последняя строка, либо посчитали
+    for (size_t i = 0, c = 0; i < menu_out.total.row; i++) {
+        if (menu_out.menu[i].show) {
+            menu_out.menu[i].show &=
+                c >= first_row && c < last_row; // выбираем показывать или нет строку
+            c++;
+        }
+    }
+
+    menu_out.before_show = header(real_total, first_row, last_row);
+    system("cls");
+    return true;
 }
 
 std::string ExplorerMenuLogic::createFileStr(size_t index) {
     if (index >= entries.size()) { //Вышли за пределы массива
         return "";
     }
-
+    
     const auto& entry = entries[index]; // копия "строки"
 
     std::ostringstream ss;
@@ -842,12 +881,69 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
     std::string name = pathToUtf8(entry.path.filename());
     const PathType type = entry.type();
     if (type == PathType::BackDir) {
-        name = "Назад";
+        name = " \\..";
     }
     const std::string icon = entry.typeEmoji();
     
-    if (UI::utf8Length(name) > NAME_WIDTH) {
-        name = name.substr(0, name.size()); // заменяется ниже
+    const size_t availableWidth = NAME_WIDTH - CELL_PADDING - ICON_WIDTH;
+
+    if (UI::utf8Length(name) > availableWidth) {
+        const fs::path filePath = entry.path;
+        const std::string ext = pathToUtf8(filePath.extension()); // Отделяем расширение от основной части имени.
+        const std::string stem = pathToUtf8(filePath.stem()); 
+        const size_t extWidth = UI::utf8Length(ext); // Считаем ширину расширения
+        constexpr size_t dotsWidth = 3; // Три точки обозначают пропущенную часть имени.
+
+        if (availableWidth > extWidth + dotsWidth) {
+            const size_t stemWidth = UI::utf8Length(stem);
+            const size_t keepWidth = availableWidth - extWidth - dotsWidth; // Резервируем место под начало, многоточие и расширение.
+
+            // Оставляем примерно половину начала и половину конца.
+            const size_t prefixWidth = (keepWidth + 1) / 2;
+            const size_t suffixWidth = keepWidth - prefixWidth;
+
+            // Находим границы начала строки, не разрывая UTF-8 символы.
+            size_t prefixPos = 0;
+            size_t chars = 0;
+
+            while (prefixPos < stem.size() && chars < prefixWidth) {
+                const unsigned char c =
+                    static_cast<unsigned char>(stem[prefixPos]);
+
+                if ((c & 0x80) == 0) prefixPos += 1; // начало ASCII
+                else if ((c & 0xE0) == 0xC0) prefixPos += 2; // начало 2 байтового символа
+                else if ((c & 0xF0) == 0xE0) prefixPos += 3;
+                else if ((c & 0xF8) == 0xF0) prefixPos += 4;
+                else prefixPos += 1;
+
+                ++chars;
+            }
+
+            // Начинаем дигаться с конца
+            size_t suffixPos = stem.size();
+            chars = 0;
+
+            while (suffixPos > 0 && chars < suffixWidth) {
+                --suffixPos;
+
+                // Идём назад до начала UTF-8 символа.
+                while (suffixPos > 0 &&
+                    (static_cast<unsigned char>(stem[suffixPos]) & 0xC0) == 0x80) { //продолжение символа
+                    --suffixPos;
+                }
+
+                ++chars;
+            }
+
+            // Собираем сокращённое имя, оставляя расширение целиком.
+            name = stem.substr(0, prefixPos) + "..." +
+                stem.substr(suffixPos) + ext;
+        }
+        else {
+            // Если расширение само занимает почти всю ячейку,
+            // показываем его целиком, насколько позволяет ширина.
+            name = ext;
+        }
     }
     const std::string size =
         type == PathType::Folder ||
@@ -860,26 +956,26 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
         ? "-"
         : UI::formatLastWrite(entry.last_write);
 
-    UI::addCell(
-        ss,
-        icon + " " + name,
-        NAME_WIDTH,
-        menu_out.act.row == index,
-        UI::SelType::Selected
-    );
+    //Формирование строки
+    if (index == menu_out.act.row)
+        ss << "\033[30;47m";
+    else
+        ss << "\033[K";
+    ss << "|";
     UI::addCell(
         ss,
         size,
-        12,
-        menu_out.act.row == index,
-        UI::SelType::Selected
+        SIZE_WIDTH
     );
     UI::addCell(
         ss,
         modified,
-        20,
-        menu_out.act.row == index,
-        UI::SelType::Selected
+        MOD_TIME_WIDTH
+    );
+    UI::addCell(
+        ss,
+        icon + " " + name,
+        NAME_WIDTH
     );
     ss << "\033[K";
 
@@ -888,4 +984,38 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
 
 void ExplorerMenuLogic::select(size_t i) {
     explorer.openPath(entries[i]);
+
+    system("cls");
+    menu_out.act.row = 0; //В самом конце
+}
+
+std::string ExplorerMenuLogic::header(
+    size_t real_total,
+    size_t first_row,
+    size_t last_row
+) {
+    const std::string border(FULL_WIDTH, '-');
+    const std::string path = pathToUtf8(explorer.currentPath());
+
+    std::ostringstream header;
+
+    header << " ┌" << border << "┐\n";
+    header << " │ Путь: " << path << '\n';
+
+    header << " │ Строки: "
+        << (real_total == 0 ? 0 : first_row + 1)
+        << "–" << last_row
+        << " из " << real_total << '\n';
+
+    header << " ├" << border << "┤\n";
+
+    header << " |";
+    UI::addCell(header, "Размер", SIZE_WIDTH);
+    UI::addCell(header, "Изменён", MOD_TIME_WIDTH);
+    UI::addCell(header, "Имя", NAME_WIDTH);
+    header << '\n';
+
+    header << " ├" << border << "┤";
+
+    return header.str();
 }

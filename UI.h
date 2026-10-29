@@ -299,14 +299,28 @@ private:
 
 class ExplorerMenuLogic : public MenuLogic {
 protected:
-    static constexpr size_t NAME_WIDTH = 30;// Ограничения чтобы оно не ломало таблицу
-
+    static constexpr size_t NAME_WIDTH = 36;// Ограничения чтобы оно не ломало таблицу
+    static constexpr size_t MOD_TIME_WIDTH = 16; // 31.08.2026 19:28 -> 2*6 чисел + 4 разделителя
+    static constexpr size_t SIZE_WIDTH = 12;
+    static constexpr size_t ICON_WIDTH = 2;
+    static constexpr size_t CELL_PADDING = 3; // UI::addCell() добавляет по одному пробелу с каждой стороны
+    const size_t FULL_WIDTH = NAME_WIDTH + MOD_TIME_WIDTH + SIZE_WIDTH + CELL_PADDING * 3;
+    static constexpr size_t MENU_SHOW_LENGTH = 20;
+    static constexpr size_t MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
     Explorer& explorer;
     std::vector<DirectoryEntry> entries;
 
+    bool beforeShow() override;
 
     std::string createFileStr(size_t index);
     void select(size_t i);
+    bool to_show(PathType type) {
+        if (type == PathType::HIDE)
+            return false;
+        else
+            return true;
+    }
+    std::string header(size_t real_total, size_t first_row, size_t last_row);
 
 public:
     explicit ExplorerMenuLogic(Explorer& exp); //explicit запрещает преобразования типов

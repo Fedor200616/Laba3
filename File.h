@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <Windows.h>
 
 #include "Student.h"
 #include "Log.h"
@@ -17,6 +18,7 @@ enum class PathType {
     OtherFile,
     RootDir,
     BackDir,
+    HIDE,
     NONE,
     ERR
 };
@@ -63,6 +65,16 @@ struct DirectoryEntry {
     PathType type() const {
         if (file_type != PathType::NONE)
             return file_type;
+        const DWORD attributes = GetFileAttributesW(path.c_str());
+
+        if (attributes != INVALID_FILE_ATTRIBUTES && //Провека на валидность
+            (attributes & FILE_ATTRIBUTE_HIDDEN)) { //проверка что файл скрыт системой
+            return PathType::HIDE;
+        }
+        const std::wstring name = path.filename().wstring();
+
+        if (name.starts_with(L"~$"))
+            return PathType::HIDE;
         std::error_code ec;
         if (fs::is_directory(path, ec))
             return PathType::Folder;
@@ -91,7 +103,7 @@ struct DirectoryEntry {
         case PathType::RootDir:
             return "📂";
         case PathType::BackDir:
-            return "⬆️";
+            return "↩";
         default:
             return "▫️";
         }
@@ -158,4 +170,5 @@ public:
     std::vector<DirectoryEntry> fileArr() const; //вектор DirectoryEntry файлов в директории
     OpenResult openPath(const DirectoryEntry& entry); // открытие пути
     DirectoryEntry getFileEntry() const; // получение информации об файле
+    fs::path currentPath() const { return curr_path; }
 };
