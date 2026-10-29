@@ -25,6 +25,28 @@ namespace {
             r.num == "Номер" &&
             r.pass == "Пароль";
     }
+    // Дополнение строки пробелами справа до width СИМВОЛОВ (setw считает байты и ломает кириллицу)
+    inline std::string padChars(const std::string& s, size_t width) {
+        size_t len = 0;
+        for (unsigned char c : s)
+            if ((c & 0xC0) != 0x80) // считаем только начала символов UTF-8
+                ++len;
+        return len >= width ? s : s + std::string(width - len, ' ');
+    }
+
+    // Шапка TXT
+    inline std::string headerTXT() {
+        const std::string sep = " | ";
+        return padChars("Имя", 20) + sep
+            + padChars("Группа", 12) + sep
+            + padChars("Номер", 5) + sep
+            + padChars("Пароль", 20) + "\n";
+    }
+
+    // Шапка CSV
+    inline std::string headerCSV() {
+        return "Имя;Группа;Номер;Пароль\n";
+    }
 }
 
 // Функция копирования строк фаайла в контейнер строки базы данных
@@ -86,7 +108,7 @@ bool File::checkHeader() {
     line = trim(line);
 
     // Проверяем оба поддерживаемых разделителя
-    for (char sep : { '|', ',' }) {
+    for (char sep : { '|', ',', ';' }) {
         StudentInfo header = copyFromString(line, 0, sep);
 
         if (isHeader(header))
@@ -157,7 +179,7 @@ std::vector<StudentInfo> File::loadFromFile(){
 
         // Первая непустая строка: определяем разделитель по шапке
         if (!header_found) {
-            const char separators[] = { '|', ',' };
+            const char separators[] = { '|', ',', ';' };
             bool ok = false;
 
             for (char sep : separators) {
@@ -279,6 +301,7 @@ void Explorer::createTXT(std::string name) {
         LOG_ERROR("Не удалось создать TXT: " + pathToUtf8(path));
         return;
     }
+    file << headerTXT(); // Сразу пишем шапку, чтобы файл можно было открыть в программе
 
     LOG_INFO("Создан TXT: " + pathToUtf8(path));
 }
@@ -301,6 +324,7 @@ void Explorer::createCSV(std::string name) {
         LOG_ERROR("Не удалось создать CSV: " + pathToUtf8(path));
         return;
     }
+    file << headerCSV(); // Сразу пишем шапку, чтобы файл можно было открыть в программе
 
     LOG_INFO("Создан CSV: " + pathToUtf8(path));
 }

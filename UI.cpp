@@ -330,7 +330,7 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
     menu_out.menu.resize(data.sizeIfFilter()); //делаем заренее размер массива
 
     if (menu_out.menu.size() <= 0) {
-        LOG_ERROR("Размер базы = 0");
+        LOG_WARN("Размер базы = 0");
         return;
     }
     size_t _row = 0;
