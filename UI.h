@@ -307,27 +307,39 @@ protected:
     const size_t FULL_WIDTH = NAME_WIDTH + MOD_TIME_WIDTH + SIZE_WIDTH + CELL_PADDING * 3;
     static constexpr size_t MENU_SHOW_LENGTH = 20;
     static constexpr size_t MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
-    Explorer& explorer;
+    
+    DirectoryEntry selected_file;
+    Explorer explorer;
     std::vector<DirectoryEntry> entries;
-
+    
+    // переменные ниже использовать только после beforeShow()
+    size_t first_row = 0;
+    size_t last_row = MENU_SHOW_LENGTH;
+    size_t real_total = 0;
+    size_t real_act = 0;
     bool beforeShow() override;
+    StateType handleNav() override;
 
     std::string createFileStr(size_t index);
     void select(size_t i);
     bool to_show(PathType type) {
-        if (type == PathType::HIDE)
+        switch (type) {
+        case PathType::HIDE:
+        case PathType::OtherFile:
+        case PathType::ERR:
+        case PathType::NONE:
             return false;
-        else
+        default:
             return true;
+        }
     }
-    std::string header(size_t real_total, size_t first_row, size_t last_row);
+    std::string beforeStr();
+    void aftEnter();
 
 public:
-    explicit ExplorerMenuLogic(Explorer& exp); //explicit запрещает преобразования типов
-
-
-
-
+    explicit ExplorerMenuLogic(DirectoryEntry sel); //explicit запрещает преобразования типов
+    DirectoryEntry getSelFile() { return selected_file; }
+    fs::path getLastPath() { return explorer.currentPath(); }
 };
 
 

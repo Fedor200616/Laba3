@@ -263,7 +263,7 @@ MainMenu::MainMenu(File& f) : file(f){
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::Explorer}, //0
+        {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения"},
@@ -818,31 +818,40 @@ std::string FindMenu::createString() {
 
 //==================================Меню проводника=========================================
 
-ExplorerMenuLogic::ExplorerMenuLogic(Explorer& exp) : explorer(exp), entries(explorer.fileArr()) {
-    menu_out.before_show = "";
-    menu_out.total = { entries.size(), 1 };
-    menu_out.post_show = "";
+ExplorerMenuLogic::ExplorerMenuLogic(DirectoryEntry s) : selected_file(s), explorer(s.path), entries(explorer.fileArr()) {
+    menu_out.total = { explorer.fileArr().size(), 1};
+    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+        "Клавишу Enter для выбора файла или папки\n"
+        "Клавиша Tab для работы с файлом, Esc для выхода\n";
     menu_out.before_state = StateType::MainMenu;
+    menu_out.act = { 1, 0 };
+    menu_out.tab_ent = false;
 }
+
+
 
 bool ExplorerMenuLogic::beforeShow() {
     windowSize();
     entries = explorer.fileArr();
     menu_out.total = { entries.size(), 1 };
     menu_out.menu.clear();
-    size_t real_act = 0; //Позиция указателя с учетом скрытых пунктов
-    size_t real_total = 0;
+    real_act = 0; //Позиция указателя с учетом скрытых пунктов
+    real_total = 0;
     for (size_t i = 0; i < entries.size(); ++i) {
         menu_out.menu.push_back({ .name = "",
             .param = [this, i]() {return createFileStr(i); },
             .act_aft = [this, i]() {select(i); },
-            .show = to_show(entries[i].type())
+            .show = to_show(entries[i].type()),
             });
-        if(i < menu_out.act.row && menu_out.menu[i].show) ++real_act;
-        if(menu_out.menu[i].show) ++real_total;
-        
+        if (i < menu_out.act.row && menu_out.menu[i].show) ++real_act;
+        if (menu_out.menu[i].show) ++real_total;
+        switch (entries[i].type()) {
+        case PathType::TXT:
+        case PathType::CSV:
+            menu_out.menu[i].act_aft = [this, i]() {selected_file = entries[i]; };
+            menu_out.menu[i].state_aft = StateType::ExplorerOutFile;
+        }
     }
-    static size_t first_row = 0;
 
     //делаем прокрутку через отображение некотороых пунктов
     if (real_act < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
@@ -855,7 +864,7 @@ bool ExplorerMenuLogic::beforeShow() {
         first_row = max(real_act - MENU_NUM_TO_SHOW, 0);
     }
 
-    size_t last_row = min(first_row + MENU_SHOW_LENGTH, real_total); // Либо последняя строка, либо посчитали
+    last_row = min(first_row + MENU_SHOW_LENGTH, real_total); // Либо последняя строка, либо посчитали
     for (size_t i = 0, c = 0; i < menu_out.total.row; i++) {
         if (menu_out.menu[i].show) {
             menu_out.menu[i].show &=
@@ -864,9 +873,17 @@ bool ExplorerMenuLogic::beforeShow() {
         }
     }
 
-    menu_out.before_show = header(real_total, first_row, last_row);
+    menu_out.before_show = beforeStr();
+
     system("cls");
     return true;
+}
+
+StateType ExplorerMenuLogic::handleNav() {
+    if (menu_out.tab_ent) 
+        return StateType::OpenExplorerTabLogic;
+    else
+        return MenuLogic::handleNav();
 }
 
 std::string ExplorerMenuLogic::createFileStr(size_t index) {
@@ -880,6 +897,9 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
 
     std::string name = pathToUtf8(entry.path.filename());
     const PathType type = entry.type();
+    if (type == PathType::BackToHome) {
+        name = "\\.";
+    }
     if (type == PathType::BackDir) {
         name = " \\..";
     }
@@ -957,11 +977,14 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
         : UI::formatLastWrite(entry.last_write);
 
     //Формирование строки
-    if (index == menu_out.act.row)
+    size_t name_width = index == 1 ? NAME_WIDTH + 1 : NAME_WIDTH; //иначе первая строка почему то сползает
+    if (index == menu_out.act.row) {
         ss << "\033[30;47m";
+    }
     else
         ss << "\033[K";
     ss << "|";
+    
     UI::addCell(
         ss,
         size,
@@ -975,7 +998,7 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
     UI::addCell(
         ss,
         icon + " " + name,
-        NAME_WIDTH
+        name_width
     );
     ss << "\033[K";
 
@@ -983,36 +1006,39 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
 }
 
 void ExplorerMenuLogic::select(size_t i) {
+    if (i >= entries.size()) {
+        return;
+    }
+
     explorer.openPath(entries[i]);
 
     system("cls");
-    menu_out.act.row = 0; //В самом конце
+    menu_out.act.row = 1;
 }
 
-std::string ExplorerMenuLogic::header(
-    size_t real_total,
-    size_t first_row,
-    size_t last_row
-) {
+std::string ExplorerMenuLogic::beforeStr() {
     const std::string border(FULL_WIDTH, '-');
     const std::string path = pathToUtf8(explorer.currentPath());
 
     std::ostringstream header;
 
     header << " ┌" << border << "┐\n";
-    header << " │ Путь: " << path << '\n';
-
-    header << " │ Строки: "
+    //header << " │ Путь: " << path << '\n';
+    UI::addCell(header, "│ Путь: " + path, FULL_WIDTH);
+    header << "\n";
+    std::ostringstream buf;
+    buf << "│ Строки: "
         << (real_total == 0 ? 0 : first_row + 1)
         << "–" << last_row
-        << " из " << real_total << '\n';
-
+        << " из " << real_total;
+    UI::addCell(header, buf.str(), FULL_WIDTH);
+    header << "\n";
     header << " ├" << border << "┤\n";
 
     header << " |";
     UI::addCell(header, "Размер", SIZE_WIDTH);
     UI::addCell(header, "Изменён", MOD_TIME_WIDTH);
-    UI::addCell(header, "Имя", NAME_WIDTH);
+    UI::addCell(header, "Имя", NAME_WIDTH+1);
     header << '\n';
 
     header << " ├" << border << "┤";

@@ -42,9 +42,33 @@ void Application::run() {
             current_state = menu.menuShow();
             break;
         }
-        case StateType::Explorer: {
-            ExplorerMenuLogic menu(explorer);
+        case StateType::OpenExplorer: {
+            static fs::path path_buf = file_manager.getFilePath();
+            if (path_buf.empty()) path_buf = app_info.getExe();
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(path_buf));
+            ExplorerMenuLogic menu(path_buf);
             current_state = menu.menuShow();
+            if (current_state == StateType::ExplorerOutFile) {
+                bool norm = true;
+                File buf(menu.getSelFile());
+                if (buf.exist() && buf.checkHeader()) {
+                    if (file_manager.setFile(menu.getSelFile())) {
+                        auto loaded_students = file_manager.loadFromFile();
+                        students_info.load(loaded_students);
+
+                        db_act_pos = { 0, 0 };
+                        current_state = StateType::MainMenu;
+                        path_buf = buf.getFilePath();
+                    }
+                }
+                else {
+                    LOG_ERROR("Выбранный файл не существует или имеет неверную шапку");
+                    std::cout << "\nНеверный формат файла! Выберите другой.\n";
+                    input::getAnyKey();
+
+                    current_state = buf_state;
+                }
+            }
             break;
         }
         case StateType::Viewer:{ // Меню просмотра полей студентов

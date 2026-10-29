@@ -12,6 +12,7 @@
 namespace fs = std::filesystem;
 
 enum class PathType {
+    BackToHome,
     Folder,
     TXT,
     CSV,
@@ -97,13 +98,15 @@ struct DirectoryEntry {
         case PathType::TXT:
             return "📝";
         case PathType::CSV:
-            return "📑";
+            return "📅";
         case PathType::OtherFile:
             return "📄";
         case PathType::RootDir:
             return "📂";
         case PathType::BackDir:
             return "↩";
+        case PathType::BackToHome:
+            return "🏠";
         default:
             return "▫️";
         }
@@ -148,15 +151,17 @@ public:
         std::error_code ec;
         return !filePath.empty() && fs::is_regular_file(filePath, ec);
     }
-    
-    bool isModified() const {
+    bool checkHeader();
+    bool isModified() {
         return is_modified;
     }
+
+    bool setFile(const DirectoryEntry& de);
 };
 
 class Explorer {
 private:
-    const fs::path default_path; // Путь самого первого нахождения окна
+    fs::path default_path; // Путь самого первого нахождения окна
     fs::path curr_path; //Путь, по которому находится окно проводника
     DirectoryEntry selected_entry;
     //DirectoryEntry file_path; //Путь к последнему выбранному файлу, и соответсвенно, файлу с которым ма работаем
@@ -171,4 +176,10 @@ public:
     OpenResult openPath(const DirectoryEntry& entry); // открытие пути
     DirectoryEntry getFileEntry() const; // получение информации об файле
     fs::path currentPath() const { return curr_path; }
+
+    void createTXT(std::string name);
+    void createCSV(std::string name);
+    void renameFile(DirectoryEntry entry, std::string new_name);
+    void deleteFile(DirectoryEntry entry);
+    void copyFile(DirectoryEntry entry, std::string name);
 };
