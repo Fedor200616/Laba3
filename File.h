@@ -37,6 +37,9 @@ struct DirectoryEntry {
     std::uintmax_t size;
     std::filesystem::file_time_type last_write;
 
+    DirectoryEntry() {
+        init();
+    };
     DirectoryEntry(fs::path fp) : path(fp) {
         init();
     };
@@ -176,6 +179,7 @@ public:
     OpenResult openPath(const DirectoryEntry& entry); // открытие пути
     DirectoryEntry getFileEntry() const; // получение информации об файле
     fs::path currentPath() const { return curr_path; }
+    void setDefault(fs::path def) { default_path = def; }
 
     void createTXT(std::string name);
     void createCSV(std::string name);

@@ -26,6 +26,7 @@ Application::Application(int argc, char* argv[])
     else {
     }
     db_act_pos = { 0, 0 };
+
 }
 
 // Основная функция обработки состояний
@@ -47,6 +48,8 @@ void Application::run() {
             if (path_buf.empty()) path_buf = app_info.getExe();
             LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(path_buf));
             ExplorerMenuLogic menu(path_buf);
+            if (!selEntry.path.empty())
+                menu.goToDir(selEntry.path); // Возвращаемся в папку, где были (в том числе после меню Tab)
             current_state = menu.menuShow();
             if (current_state == StateType::ExplorerOutFile) {
                 bool norm = true;
@@ -65,10 +68,19 @@ void Application::run() {
                     LOG_ERROR("Выбранный файл не существует или имеет неверную шапку");
                     std::cout << "\nНеверный формат файла! Выберите другой.\n";
                     input::getAnyKey();
-
                     current_state = buf_state;
                 }
             }
+            if (current_state == StateType::OpenExplorerTabLogic)
+                selEntry = menu.getTabEntry(); // файл под курсором или текущая папка
+            else
+                selEntry = menu.getLastPath();
+            break;
+        }
+        case StateType::OpenExplorerTabLogic: {
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(selEntry.path));
+            ExplorerTabLogic menu(selEntry);
+            current_state = menu.menuShow();
             break;
         }
         case StateType::Viewer:{ // Меню просмотра полей студентов

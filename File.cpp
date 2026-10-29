@@ -263,7 +263,7 @@ DirectoryEntry Explorer::getFileEntry() const {
 }
 
 void Explorer::createTXT(std::string name) {
-    fs::path path = curr_path / name;
+    fs::path path = curr_path / utf8ToPath(name);
 
     if (path.extension() != ".txt")
         path += ".txt";
@@ -285,7 +285,7 @@ void Explorer::createTXT(std::string name) {
 
 // Создание CSV
 void Explorer::createCSV(std::string name) {
-    fs::path path = curr_path / name;
+    fs::path path = curr_path / utf8ToPath(name);
 
     if (path.extension() != ".csv")
         path += ".csv";
@@ -307,7 +307,7 @@ void Explorer::createCSV(std::string name) {
 
 // Переименование
 void Explorer::renameFile(DirectoryEntry entry, std::string new_name) {
-    fs::path destination = curr_path / new_name;
+    fs::path destination = curr_path / utf8ToPath(new_name);
 
     std::error_code ec;
 
@@ -360,7 +360,7 @@ void Explorer::copyFile(DirectoryEntry entry, std::string name) {
         return;
     }
 
-    fs::path destination = curr_path / name;
+    fs::path destination = curr_path / utf8ToPath(name);
 
     if (destination.extension().empty())
         destination += entry.path.extension().string();

@@ -25,6 +25,8 @@ private:
 
 	Position db_act_pos; // Позиция активного элемента в данных
 
+    DirectoryEntry selEntry; //Файл, который выбралы для Таб меню
+
 public:
     Application(int argc, char* argv[]);
 
