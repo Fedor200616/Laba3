@@ -148,14 +148,16 @@ public:
     }
 
     std::vector<StudentInfo> loadFromFile();
-    void saveToFile(DataBase& db, DirectoryEntry& dir);
+    void saveToFile(DataBase& db, const DirectoryEntry& dir);
     fs::path getFilePath() const {return filePath;}
+    DirectoryEntry getFileDirEntry() const { return DirectoryEntry(filePath); }
     bool exist() const {
         std::error_code ec;
         return !filePath.empty() && fs::is_regular_file(filePath, ec);
     }
     bool checkHeader();
 
+    // Изменение рабочего файла
     bool setFile(const DirectoryEntry& de);
 };
 

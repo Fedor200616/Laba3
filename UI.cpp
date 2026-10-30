@@ -268,7 +268,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения"},
-        {.name = "Сохранить"}, //4
+        {.name = "Сохранить", .act_aft = [this]() {file.saveToFile(data, file.getFileDirEntry()); }}, //4
         {.name = "Сохранить как"},
         {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
     };

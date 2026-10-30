@@ -212,6 +212,53 @@ std::vector<StudentInfo> File::loadFromFile(){
     return result;
 }
 
+// Сохранение базы данных в файл
+void File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
+    // Тип берем по расширению, а не по dir.type(): файла может еще не быть на диске
+    const fs::path ext = dir.path.extension();
+    const bool is_csv = (ext == ".csv");
+    if (!is_csv && ext != ".txt") {
+        LOG_ERROR("Ошибка типа файла при сохранении: " + pathToUtf8(dir.path));
+        return;
+    }
+
+    std::ofstream out(dir.path, std::ios::trunc);
+    if (!out.is_open()) {
+        LOG_ERROR("Не удалось открыть файл для записи: " + pathToUtf8(dir.path));
+        return;
+    }
+
+    const std::string sep = " | ";
+    out << (is_csv ? headerCSV() : headerTXT()); // Шапка такая же, как у созданных файлов
+
+    for (const StudentInfo& s : db.getInfoVec()) {
+        // Пустые поля пишем как "Нет данных", loadFromFile превращает их обратно в пустые,
+        // иначе пустое первое поле в TXT сдвинуло бы все колонки
+        const std::string name = s.name.empty() ? file_nodata : s.name;
+        const std::string group = s.group.empty() ? file_nodata : s.group;
+        const std::string num = s.num.empty() ? file_nodata : s.num;
+        const std::string pass = s.pass.empty() ? file_nodata : s.pass;
+
+        if (is_csv)
+            out << name << ';' << group << ';' << num << ';' << pass << '\n';
+        else
+            out << padChars(name, 20) << sep
+            << padChars(group, 12) << sep
+            << padChars(num, 5) << sep
+            << padChars(pass, 20) << '\n';
+    }
+
+    out.close();
+    if (out.fail()) {
+        LOG_ERROR("Ошибка записи в файл: " + pathToUtf8(dir.path));
+        return;
+    }
+
+    LOG_INFO("Данные сохранены в файл: " + pathToUtf8(dir.path) + ", записей: " + std::to_string(db.size()));
+    db.setModif(false);
+    setFile(DirectoryEntry(dir.path)); // Рабочим файлом становится сохраненный
+}
+
 void Explorer::fillFiles() {
     if (!fs::exists(curr_path) || !fs::is_directory(curr_path)) {
         LOG_WARN("Ошибка формирования вектора файлов в директории " + pathToUtf8(curr_path));
