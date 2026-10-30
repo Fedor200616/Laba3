@@ -165,7 +165,7 @@ StateType MenuLogic::menuShow()
 std::string MenuLogic::showUI() {
     const size_t menu_size = menu_out.menu.size();
 
-    if (menu_size > 0) { // У меню без пунктов (NotVerMenu) выбирать нечего
+    if (menu_size > 0) { // У меню без пунктов выбирать нечего
         // Ищем ближайший показанный и доступный пункт, начиная с активного
         const size_t start = menu_out.act.row < menu_size ? menu_out.act.row : 0;
         menu_out.act.row = start; // Если подходящего нет (как в EditField), остаемся на стартовом
@@ -288,8 +288,9 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
 
 bool MainMenu::beforeShow() {
     menu_out.menu[0].enter = !data.getModif(); //не даем поменять файл если было изменение
-    //if (menu_out.act.row == 0 && !menu_out.menu[0].enter) menu_out.act.row++; //перекидываем на 2 пункт меню
+    menu_out.menu[3].show = menu_out.menu[4].show = data.getModif(); //не нужно отменять изменения или сохранять файл, если изменений не было
     menu_out.menu[6].show = !data.getModif(); //не даем выйти из программы, если не проработали с изменениями
+
     MenuLogic::beforeShow();
     return true;
 }
