@@ -148,12 +148,14 @@ bool MenuLogic::beforeShow() {
 StateType MenuLogic::menuShow()
 {
     StateType next_state = StateType::NONE;
-    while (next_state == StateType::NONE){
-		if (!beforeShow()) {
-			LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
-			return StateType::_ERROR;
-		}
-        while (!menu_out.menu[menu_out.act.row].show) menu_out.act.row++;
+    while (next_state == StateType::NONE) {
+        if (!beforeShow()) {
+            LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
+            return StateType::_ERROR;
+        }
+        // Границу проверяем, у меню без пунктов (NotVerMenu) и у меню без видимых пунктов вектор пуст или закончится
+        while (menu_out.act.row < menu_out.menu.size() && !menu_out.menu[menu_out.act.row].show)
+            menu_out.act.row++;
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
@@ -161,42 +163,37 @@ StateType MenuLogic::menuShow()
 }
 
 std::string MenuLogic::showUI() {
-
-    size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
-    static int first_row = 0;
-    // Проверяем не более menu_size пунктов
     const size_t menu_size = menu_out.menu.size();
 
-    for (size_t i = 0; i < menu_size; ++i) {
-        if (menu_out.act.row >= menu_size)
-            menu_out.act.row = 0;
-        if (menu_out.menu[menu_out.act.row].enter)
-            break;
-        ++menu_out.act.row;
-    }
-
-    // Если ни один пункт не подходит
-    if (!menu_out.menu[menu_out.act.row].enter) {
-        return "";
+    if (menu_size > 0) { // У меню без пунктов (NotVerMenu) выбирать нечего
+        // Ищем ближайший показанный и доступный пункт, начиная с активного
+        const size_t start = menu_out.act.row < menu_size ? menu_out.act.row : 0;
+        menu_out.act.row = start; // Если подходящего нет (как в EditField), остаемся на стартовом
+        for (size_t i = 0; i < menu_size; ++i) {
+            const size_t idx = (start + i) % menu_size;
+            if (menu_out.menu[idx].show && menu_out.menu[idx].enter) {
+                menu_out.act.row = idx;
+                break;
+            }
+        }
     }
 
     std::ostringstream ss;
-	ss << "\033[0m"; // Сброс цвета и стиля
-    if(!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
+    ss << "\033[0m"; // Сброс цвета и стиля
+    if (!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
         ss << menu_out.before_show << '\n'; //Отображение шапки
 
-    for (size_t i = 0; i < menu_out.total.row; i++) {
+    for (size_t i = 0; i < menu_out.total.row && i < menu_size; i++) {
+        if (!menu_out.menu[i].show)
+            continue; // Скрытый пункт ничего не выводит, в том числе маркеры
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
-        if (menu_out.menu[i].show) {
-            ss << menu_out.menu[i].name;
-            if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
-                ss << ' ' << menu_out.menu[i].param();
-            ss << "\033[K\n";
-        }
+        ss << menu_out.menu[i].name;
+        if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
+            ss << ' ' << menu_out.menu[i].param();
+        ss << "\033[K\n";
     }
     ss << "\033[0m\n";
     ss << menu_out.post_show;
-
 
     return ss.str();
 }
