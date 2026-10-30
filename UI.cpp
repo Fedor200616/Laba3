@@ -270,12 +270,18 @@ MainMenu::MainMenu(File& f) : file(f){
         {.name = "Отменить изменения"},
         {.name = "Сохранить"}, //4
         {.name = "Сохранить как"},
-        {.name = "Выйти из программы"}, //6
+        {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
     };
     menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
                             "Клавишу Enter для выбора пункта меню";
     menu_out.total.row = menu_out.menu.size();
     menu_out.before_state = S::MainMenu;
+}
+
+bool MainMenu::beforeShow() {
+    menu_out.menu[6].show = !file.isModified();
+    MenuLogic::beforeShow();
+    return true;
 }
 
 std::string MainMenu::path_str(){
@@ -1184,10 +1190,8 @@ std::string ExplorerTabLogic::inputStr() const {
     const std::string border = repeatStr("─", NAME_LEN + 3);
 
     ss << "\033[K\n";
-    ss << " " << title << "\033[K\n";
-    ss << " ┌" << border << "┐\033[K\n";
-    ss << " │ " << UI::padRight(input_line.display(), NAME_LEN + 1) << " │\033[K\n"; // +1 под курсор
-    ss << " └" << border << "┘\033[K\n";
+    ss << " " << title << "\033[K";
+    ss << UI::padRight(input_line.display(), NAME_LEN + 1) << " \033[K\n"; 
 
     const std::string text = input_line.text();
     if (text.empty()) {

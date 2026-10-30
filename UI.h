@@ -128,6 +128,8 @@ private:
     void displaySet(bool file_exist);
     std::string path_str();
 
+    bool beforeShow() override;
+
 };
 
 class NotVerMenu : public MenuLogic {
