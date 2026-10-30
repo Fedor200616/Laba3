@@ -100,4 +100,3 @@ Laba/*/Release/
 *.json
 *.command
 app.log
-/File.h
