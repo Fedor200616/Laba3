@@ -154,8 +154,7 @@ StateType MenuLogic::menuShow()
             return StateType::_ERROR;
         }
         // Границу проверяем, у меню без пунктов (NotVerMenu) и у меню без видимых пунктов вектор пуст или закончится
-        while (menu_out.act.row < menu_out.menu.size() && !menu_out.menu[menu_out.act.row].show)
-            menu_out.act.row++;
+        while (!menu_out.menu[menu_out.act.row].show) menu_out.act.row++;
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
@@ -163,6 +162,8 @@ StateType MenuLogic::menuShow()
 }
 
 std::string MenuLogic::showUI() {
+    size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
+    static int first_row = 0;
     const size_t menu_size = menu_out.menu.size();
 
     if (menu_size > 0) { // У меню без пунктов выбирать нечего
@@ -287,11 +288,11 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
 }
 
 bool MainMenu::beforeShow() {
+    MenuLogic::beforeShow();
     menu_out.menu[0].enter = !data.getModif(); //не даем поменять файл если было изменение
     menu_out.menu[3].show = menu_out.menu[4].show = data.getModif(); //не нужно отменять изменения или сохранять файл, если изменений не было
     menu_out.menu[6].show = !data.getModif(); //не даем выйти из программы, если не проработали с изменениями
 
-    MenuLogic::beforeShow();
     return true;
 }
 
