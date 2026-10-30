@@ -110,14 +110,14 @@ namespace validate {
         if (noData(s))
             return true;
 
-        if (w.empty() || !isLatinUpper(w[0]) && !isCyrUpper(w[0]))
+        if (w.empty())
             return false;
         
         // После первой буквы разрешены маленькие буквы и знаки -, _, '
         for (std::size_t i = 1; i < w.size(); ++i) {
             wchar_t c = w[i];
 
-            if (!(isLatinLower(c) || isCyrLower(c) ||
+            if (!(isLatinLower(c) || isCyrLower(c) || !isLatinUpper(c) || !isCyrUpper(c) ||
                 c == L'-' || c == L'_' || c == L'\''))
                 return false;
         }

@@ -153,8 +153,6 @@ StateType MenuLogic::menuShow()
             LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
             return StateType::_ERROR;
         }
-        // Границу проверяем, у меню без пунктов (NotVerMenu) и у меню без видимых пунктов вектор пуст или закончится
-        while (!menu_out.menu[menu_out.act.row].show) menu_out.act.row++;
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
@@ -162,8 +160,6 @@ StateType MenuLogic::menuShow()
 }
 
 std::string MenuLogic::showUI() {
-    size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
-    static int first_row = 0;
     const size_t menu_size = menu_out.menu.size();
 
     if (menu_size > 0) { // У меню без пунктов выбирать нечего
@@ -207,34 +203,20 @@ StateType MenuLogic::handleNav() {
     int itter = 0;
     switch (nav) {
     case MenuNav::Up:
-        do {
-            if (menu_out.act.row > 0) {
-                menu_out.act.row--;
+        for (size_t i = (menu_out.act.row < menu_out.menu.size() ? menu_out.act.row : menu_out.menu.size()); i > 0; --i) {
+            if (menu_out.menu[i - 1].show && menu_out.menu[i - 1].enter) { // ближайший доступный пункт выше
+                menu_out.act.row = i - 1;
+                break;
             }
-            itter++;
-			if (itter > menu_out.total.row) {
-				LOG_ERROR("Ошибка в навигации по меню.");
-                menu_out.act.row = act_row;
-			}
-        } while (
-            !menu_out.menu[menu_out.act.row].show ||
-            !menu_out.menu[menu_out.act.row].enter
-            );
+        }
         break;
     case MenuNav::Down:
-        do {
-            if (menu_out.act.row + 1 < menu_out.total.row) {
-                menu_out.act.row++;
+        for (size_t i = menu_out.act.row + 1; i < menu_out.total.row && i < menu_out.menu.size(); ++i) {
+            if (menu_out.menu[i].show && menu_out.menu[i].enter) { // ближайший доступный пункт ниже
+                menu_out.act.row = i;
+                break;
             }
-            itter++;
-            if (itter > menu_out.total.row) {
-                LOG_ERROR("Ошибка в навигации по меню.");
-                menu_out.act.row = act_row;
-            }
-        } while (
-            !menu_out.menu[menu_out.act.row].show ||
-            !menu_out.menu[menu_out.act.row].enter
-            );
+        }
         break;
     case MenuNav::Left:
         if (menu_out.act.col > 0) menu_out.act.col--;
@@ -276,7 +258,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
-        {.name = "Отменить изменения", .act_aft = [this]() {data.load(file.loadFromFile()); } },
+        {.name = "Отменить изменения", .act_aft = [this]() {data.load(file.loadFromFile()); data.setModif(false); }},
         {.name = "Сохранить", .act_aft = [this]() {file.saveToFile(data, file.getFileDirEntry()); }}, //4
         {.name = "Сохранить как"},
         {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
@@ -289,16 +271,26 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
 
 bool MainMenu::beforeShow() {
     MenuLogic::beforeShow();
-    menu_out.menu[0].enter = !data.getModif(); //не даем поменять файл если было изменение
-    menu_out.menu[3].show = menu_out.menu[4].show = data.getModif(); //не нужно отменять изменения или сохранять файл, если изменений не было
-    menu_out.menu[6].show = !data.getModif(); //не даем выйти из программы, если не проработали с изменениями
+    const bool file_exist = file.exist();
+    const bool modif = data.getModif();
+    if (modif) {
+        menu_out.before_show = "Выбранный файл изменен смена файла и выход недоступны";
+    }
+    else menu_out.before_show = "";
+
+    menu_out.menu[0].enter = !modif; // не даем поменять файл, если были изменения
+    menu_out.menu[1].show = file_exist;
+    menu_out.menu[2].show = file_exist;
+    menu_out.menu[3].show = file_exist && modif; // отмена и сохранение нужны только при изменениях
+    menu_out.menu[4].show = file_exist && modif;
+    menu_out.menu[5].show = file_exist;
+    menu_out.menu[6].show = !modif; // не даем выйти, пока не проработали изменения
 
     return true;
 }
 
-std::string MainMenu::path_str(){
-    displaySet(file.exist());
-    if(!file.exist())
+std::string MainMenu::path_str() {
+    if (!file.exist())
         return "Выберите файл";
     return pathToUtf8(file.getFilePath());
 }
