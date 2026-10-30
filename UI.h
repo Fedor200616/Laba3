@@ -120,10 +120,11 @@ protected:
 
 class MainMenu : public MenuLogic {
 public:
-    MainMenu(File& f);
+    MainMenu(File& f, DataBase& b);
 
 private:
     File& file;
+    DataBase& data;
 
     void displaySet(bool file_exist);
     std::string path_str();

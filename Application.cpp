@@ -39,7 +39,7 @@ void Application::run() {
         StateType buf_state = current_state;
         switch (current_state) {
         case StateType::MainMenu:{
-            MainMenu menu(file_manager);
+            MainMenu menu(file_manager, students_info);
             current_state = menu.menuShow();
             break;
         }

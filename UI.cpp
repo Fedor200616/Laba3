@@ -257,7 +257,7 @@ StateType MenuLogic::handleNav() {
 
 //=======================MainMenu======================
 
-MainMenu::MainMenu(File& f) : file(f){
+MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
     LOG_INFO("Запуск конструктора MainMenu");
     menu_out.total.col = 1;
     menu_out.act = {0, 0};
@@ -279,7 +279,7 @@ MainMenu::MainMenu(File& f) : file(f){
 }
 
 bool MainMenu::beforeShow() {
-    menu_out.menu[6].show = !file.isModified();
+    menu_out.menu[6].show = !data.getModif();
     MenuLogic::beforeShow();
     return true;
 }
@@ -780,7 +780,7 @@ FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p
     menu_out.menu[4].param = [this]() { return createString(); };
     menu_out.menu[4].act_aft = [this]() { pos = pos_of_find; };   // перейти к найденной строке
     menu_out.menu[4].state_aft = StateType::Viewer;
-    menu_out.before_state = StateType::Viewer;
+    menu_out.before_state = StateType::MainMenu;
 }
 
 bool FindMenu::beforeShow() {

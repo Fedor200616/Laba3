@@ -133,7 +133,6 @@ bool File::setFile(const DirectoryEntry& de) {
 
     filePath = de.path;
     type = new_type;
-    is_modified = false;
     have_marker = false;
 
     LOG_INFO("Рабочий файл изменён: " + pathToUtf8(filePath));

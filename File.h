@@ -123,7 +123,6 @@ class File {
 private:
     fs::path filePath = ""; // путь к файлу
     PathType type = PathType::NONE; // тип файла
-    bool is_modified = false; // Был ли модифицирован файл
 
     StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
 public:
@@ -149,15 +148,13 @@ public:
     }
 
     std::vector<StudentInfo> loadFromFile();
+    void saveToFile(DataBase& db, DirectoryEntry& dir);
     fs::path getFilePath() const {return filePath;}
     bool exist() const {
         std::error_code ec;
         return !filePath.empty() && fs::is_regular_file(filePath, ec);
     }
     bool checkHeader();
-    bool isModified() {
-        return is_modified;
-    }
 
     bool setFile(const DirectoryEntry& de);
 };
