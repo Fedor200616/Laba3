@@ -303,6 +303,7 @@ void DataBase::updateNum() {
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::setField(size_t row, Inf col, std::string str) {
+    setModif();
     LOG_INFO("Поле изменено: строка " + std::to_string(row) +
         " колонка " + std::to_string(infToSize(col)) +
         " старое поле " + getField(row, col) +
@@ -345,10 +346,12 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::setField(size_t row, size_t col, std::string str) {
+    setModif();
     return setField(row, sizeToInf(col), str);
 }
 
 void DataBase::removeRow(size_t row) {
+    setModif();
     if (row >= info.size()) {
         LOG_WARN("Попытка удалить несуществующую строку");
         return;                 // пустая база или неверный индекс
@@ -362,6 +365,7 @@ void DataBase::removeRow(size_t row) {
 }
 
 void DataBase::insertRow(size_t row) {
+    setModif();
     if (row > info.size()) row = info.size(); // Если указанная строка ввода больше массива, то это просто последняя строка
 
     // Референсная строка: та, перед которой вставляем (если она есть)
@@ -380,6 +384,7 @@ void DataBase::insertRow(size_t row) {
 /// <param name="new_str">новая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
+    setModif();
     if (!validate::check(sizeToInf(col), str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
         return 0;

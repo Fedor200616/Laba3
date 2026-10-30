@@ -47,10 +47,6 @@ namespace UI {
         case SelType::Selected:
             cell_str = "\033[30;47m";          // серый фон
             break;
-
-        case SelType::Yellow:
-            cell_str = "\033[30;43m";          // жёлтый фон
-            break;
         case SelType::Underlined:
             cell_str = "\033[4;97;40m";
             break;
@@ -168,6 +164,21 @@ std::string MenuLogic::showUI() {
 
     size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
     static int first_row = 0;
+    // Проверяем не более menu_size пунктов
+    const size_t menu_size = menu_out.menu.size();
+
+    for (size_t i = 0; i < menu_size; ++i) {
+        if (menu_out.act.row >= menu_size)
+            menu_out.act.row = 0;
+        if (menu_out.menu[menu_out.act.row].enter)
+            break;
+        ++menu_out.act.row;
+    }
+
+    // Если ни один пункт не подходит
+    if (!menu_out.menu[menu_out.act.row].enter) {
+        return "";
+    }
 
     std::ostringstream ss;
 	ss << "\033[0m"; // Сброс цвета и стиля
@@ -267,7 +278,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
-        {.name = "Отменить изменения"},
+        {.name = "Отменить изменения", .act_aft = [this]() {data.load(file.loadFromFile()); } },
         {.name = "Сохранить", .act_aft = [this]() {file.saveToFile(data, file.getFileDirEntry()); }}, //4
         {.name = "Сохранить как"},
         {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
@@ -279,7 +290,9 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
 }
 
 bool MainMenu::beforeShow() {
-    menu_out.menu[6].show = !data.getModif();
+    menu_out.menu[0].enter = !data.getModif(); //не даем поменять файл если было изменение
+    //if (menu_out.act.row == 0 && !menu_out.menu[0].enter) menu_out.act.row++; //перекидываем на 2 пункт меню
+    menu_out.menu[6].show = !data.getModif(); //не даем выйти из программы, если не проработали с изменениями
     MenuLogic::beforeShow();
     return true;
 }

@@ -18,7 +18,7 @@
 
 
 namespace UI {
-    enum class SelType { Selected, Yellow, Underlined};
+    enum class SelType { Selected, Underlined};
 
     size_t utf8Length(const std::string& str);
 
