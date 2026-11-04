@@ -4,7 +4,8 @@
 //Конструктор главного управленца
 Application::Application(int argc, char* argv[])
     : app_info(argc, argv),
-    file_manager(app_info.getStartPath()) {
+    file_manager(app_info.getStartPath()),
+    explorer(app_info.getStartPath()){
     Log::getInstance().init(
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
@@ -14,9 +15,9 @@ Application::Application(int argc, char* argv[])
 
     LOG_INFO(log_message);
 
-    fs::path start_path = app_info.getStartPath(); //получаем путь к exe файлу
-    if (!start_path.empty() && fs::exists(start_path)) { // если флаг указан в аргументах запуска
-        auto loaded_students = file_manager.loadFromFile(); // получаем данные о студентках
+    fs::path start_path = app_info.getStartPath();
+    if (!start_path.empty() && fs::exists(start_path)) { // Импортируем файл, если он указан в флагах запуска
+        auto loaded_students = file_manager.loadFromFile(); 
         students_info.load(loaded_students);
 
         current_state = StateType::MainMenu;
@@ -25,16 +26,63 @@ Application::Application(int argc, char* argv[])
     else {
     }
     db_act_pos = { 0, 0 };
+
 }
 
 // Основная функция обработки состояний
 void Application::run() {
     // Первоначальная очистка экрана
     std::cout << "\033[2J\033[H";
-	
+	StateType prev_state = StateType::MainMenu;
     while (current_state != StateType::EXIT) {
 		system("cls"); // Очистка экрана для Windows
+        StateType buf_state = current_state;
         switch (current_state) {
+        case StateType::MainMenu:{
+            MainMenu menu(file_manager);
+            current_state = menu.menuShow();
+            break;
+        }
+        case StateType::OpenExplorer: {
+            static fs::path path_buf = file_manager.getFilePath();
+            if (path_buf.empty()) path_buf = app_info.getExe();
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(path_buf));
+            ExplorerMenuLogic menu(path_buf);
+            if (!selEntry.path.empty())
+                menu.goToDir(selEntry.path); // Возвращаемся в папку, где были (в том числе после меню Tab)
+            current_state = menu.menuShow();
+            if (current_state == StateType::ExplorerOutFile) {
+                bool norm = true;
+                File buf(menu.getSelFile());
+                if (buf.exist() && buf.checkHeader()) {
+                    if (file_manager.setFile(menu.getSelFile())) {
+                        auto loaded_students = file_manager.loadFromFile();
+                        students_info.load(loaded_students);
+
+                        db_act_pos = { 0, 0 };
+                        current_state = StateType::MainMenu;
+                        path_buf = buf.getFilePath();
+                    }
+                }
+                else {
+                    LOG_ERROR("Выбранный файл не существует или имеет неверную шапку");
+                    std::cout << "\nНеверный формат файла! Выберите другой.\n";
+                    input::getAnyKey();
+                    current_state = buf_state;
+                }
+            }
+            if (current_state == StateType::OpenExplorerTabLogic)
+                selEntry = menu.getTabEntry(); // файл под курсором или текущая папка
+            else
+                selEntry = menu.getLastPath();
+            break;
+        }
+        case StateType::OpenExplorerTabLogic: {
+            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(selEntry.path));
+            ExplorerTabLogic menu(selEntry);
+            current_state = menu.menuShow();
+            break;
+        }
         case StateType::Viewer:{ // Меню просмотра полей студентов
             Viewer viewer(students_info, db_act_pos);
             current_state = viewer.menuShow();
@@ -81,17 +129,19 @@ void Application::run() {
         case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";
-			std::cout << "Нажмите любую клавишу для выхода...";
+			std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";
 			input::getAnyKey();
-			current_state = StateType::EXIT;
+			current_state = StateType::MainMenu;
 			break;
         default:
 			LOG_ERROR("Неизвестное состояние: " + std::to_string(static_cast<int>(current_state)));
-            std::cout << "Произошло непредвиденное завершение работы\n";
-            std::cout << "Нажмите любую клавишу для выхода...";
+            std::cout << "Неизвестная ошибка\n";
+            std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";
             input::getAnyKey();
-			current_state = StateType::EXIT;
+			current_state = StateType::MainMenu;
             break;
         }
+        prev_state = buf_state;
     }
 }   
+
