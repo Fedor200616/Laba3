@@ -255,7 +255,6 @@ void File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
     }
 
     LOG_INFO("Данные сохранены в файл: " + pathToUtf8(dir.path) + ", записей: " + std::to_string(db.size()));
-    db.setModif(false);
     setFile(DirectoryEntry(dir.path)); // Рабочим файлом становится сохраненный
 }
 

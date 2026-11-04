@@ -49,7 +49,7 @@ Inf sizeToInf(size_t col);
 class DataBase {
 private:
     std::vector<StudentInfo> info;  // Все записи базы данных
-    std::vector<StudentInfo> backupInfo; // копия начального файла до изменений
+    std::vector<StudentInfo> backup_info; // копия начального файла до изменений
     bool data_valid = true;
 
     bool show_filtered = false;     // Включён ли фильтр (показывать только найденные строки)
@@ -57,6 +57,7 @@ private:
     std::string filter_token = "";       // Строка поиска фильтра
 
     bool is_modified = false; // Была ли модифицирована база
+    void setModif(bool val = true) { is_modified = val; };
 public:
     // Константы
     const int NAME_WIDTH = 20;      // Длина поля имени
@@ -124,8 +125,6 @@ public:
     bool getModif() const { return is_modified; }
 
     // ---------- Изменение данных ----------
-
-    void setModif(bool val = true) { is_modified = val; };
 
     // Перенумеровать поле row у всех записей (1, 2, 3, ...)
     void updateNum();

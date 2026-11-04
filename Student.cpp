@@ -218,10 +218,16 @@ namespace validate {
 
 void DataBase::load(const std::vector<StudentInfo>& loaded_data) {
     info = loaded_data;
+    backup_info = loaded_data;
     if (info.empty()) { // Файл только с шапкой, добавляем пустую строку, чтобы было что показывать и редактировать
         LOG_WARN("В файле нет записей, добавлена пустая строка");
         insertRow(0);
     }
+    is_modified = false;
+}
+void DataBase::loadBackup() {
+    info = backup_info;
+    is_modified = false;
 }
 
 int DataBase::numWidth() const{
