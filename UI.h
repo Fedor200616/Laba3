@@ -130,6 +130,16 @@ private:
 
 };
 
+class YesNoMenu : public MenuLogic {
+public:
+    YesNoMenu(std::string str, StateType before);
+    StateType getRes(){ return res; }
+private:
+    StateType bef_state;
+    StateType res;
+    std::string bef_str;
+};
+
 class NotVerMenu : public MenuLogic {
 public:
     NotVerMenu(std::string s, size_t c) : str(s), inf(sizeToInf(c)) {

@@ -255,6 +255,23 @@ StateType MenuLogic::handleNav() {
     return StateType::NONE;
 }
 
+//=======================YesNoMenu=====================
+
+YesNoMenu::YesNoMenu(std::string str, StateType before) : bef_str(str), bef_state(before), res(StateType::No){
+    menu_out.act = { 0,0 };
+    menu_out.total.col = 1;
+
+    menu_out.menu = {
+        {.name = "Продолжить ", .act_aft = [this]() {res = StateType::Yes; }, .state_aft = bef_state},
+        {.name = "Отменить ", .act_aft = [this]() {res = StateType::No; }, .state_aft = bef_state}
+    };
+    menu_out.total.row = menu_out.menu.size();
+
+    menu_out.before_show = str;
+    menu_out.post_show = "Используйте стрелочки вверх, вниз и Enter";
+    menu_out.before_state = bef_state;
+}
+
 //=======================MainMenu======================
 
 MainMenu::MainMenu(File& f) : file(f){
