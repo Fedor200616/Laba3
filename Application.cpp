@@ -34,10 +34,36 @@ void Application::run() {
     // Первоначальная очистка экрана
     std::cout << "\033[2J\033[H";
 	StateType prev_state = StateType::MainMenu;
-    while (current_state != StateType::EXIT) {
+	bool exit_flag = false;
+    while (!exit_flag) {
 		system("cls"); // Очистка экрана для Windows
         StateType buf_state = current_state;
         switch (current_state) {
+		case StateType::Save: {
+			if (file_manager.exist()) {
+				file_manager.saveToFile(students_info, file_manager.getFileDirEntry());
+				students_info.setModif(false);
+			}
+			else {
+				LOG_ERROR("Ошибка сохранения: файл не выбран");
+				std::cout << "Ошибка сохранения: файл не выбран\n";
+				input::getAnyKey();
+			}
+			current_state = StateType::MainMenu;
+			break;
+		}
+        case StateType::Cancel: {
+            if (file_manager.exist()) {
+                students_info.loadBackup();
+            }
+            else {
+                LOG_ERROR("Ошибка открытия начального файла");
+                std::cout << "Ошибка при отмене изменений\n";
+                input::getAnyKey();
+            }
+            break;
+        }
+
         case StateType::MainMenu:{
             MainMenu menu(file_manager, students_info);
             current_state = menu.menuShow();
@@ -124,6 +150,23 @@ void Application::run() {
             FindMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();
             db_act_pos = menu.getPos();
+            break;
+        }
+        case StateType::EXIT: {
+            if (students_info.getModif()) {
+                LOG_WARN("Попытка выхода из программы без сохранения данных");
+				YesNoMenu menu("Данные не были сохранены. Вы уверены, что хотите выйти? \nИзменения будут утеряны.", StateType::EXIT);
+                current_state = menu.menuShow();
+                if (menu.getRes()) {
+                    exit_flag = true;
+                }
+                else {
+                    exit_flag = false;
+					current_state = StateType::MainMenu; //Ну выход из программы возможент только из главного меню
+                }
+            }
+            else 
+				exit_flag = true;
             break;
         }
         case StateType::_ERROR:

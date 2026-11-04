@@ -49,6 +49,7 @@ Inf sizeToInf(size_t col);
 class DataBase {
 private:
     std::vector<StudentInfo> info;  // Все записи базы данных
+    std::vector<StudentInfo> backupInfo; // копия начального файла до изменений
     bool data_valid = true;
 
     bool show_filtered = false;     // Включён ли фильтр (показывать только найденные строки)
@@ -69,6 +70,7 @@ public:
 
     // Загрузка вектора информации из файла (заменяет все текущие данные)
     void load(const std::vector<StudentInfo>& loaded_data);
+    void loadBackup();
 
     // ---------- Геттеры ----------
 

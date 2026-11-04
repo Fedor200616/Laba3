@@ -136,10 +136,10 @@ private:
 class YesNoMenu : public MenuLogic {
 public:
     YesNoMenu(std::string str, StateType before);
-    StateType getRes(){ return res; }
+    bool getRes(){ return res; }
 private:
     StateType bef_state;
-    StateType res;
+    bool res;
     std::string bef_str;
 };
 

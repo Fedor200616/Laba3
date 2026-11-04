@@ -248,13 +248,13 @@ StateType MenuLogic::handleNav() {
 
 //=======================YesNoMenu=====================
 
-YesNoMenu::YesNoMenu(std::string str, StateType before) : bef_str(str), bef_state(before), res(StateType::No){
+YesNoMenu::YesNoMenu(std::string str, StateType before) : bef_str(str), bef_state(before), res(false){
     menu_out.act = { 0,0 };
     menu_out.total.col = 1;
 
     menu_out.menu = {
-        {.name = "Продолжить ", .act_aft = [this]() {res = StateType::Yes; }, .state_aft = bef_state},
-        {.name = "Отменить ", .act_aft = [this]() {res = StateType::No; }, .state_aft = bef_state}
+        {.name = "Продолжить ", .act_aft = [this]() {res = true; }, .state_aft = bef_state},
+        {.name = "Отменить ", .act_aft = [this]() {res = false; }, .state_aft = bef_state}
     };
     menu_out.total.row = menu_out.menu.size();
 
@@ -275,8 +275,8 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
-        {.name = "Отменить изменения", .act_aft = [this]() {data.load(file.loadFromFile()); data.setModif(false); }},
-        {.name = "Сохранить", .act_aft = [this]() {file.saveToFile(data, file.getFileDirEntry()); }}, //4
+        {.name = "Отменить изменения", .state_aft = S::Cancel },
+        {.name = "Сохранить", .state_aft = S::Save }, //4
         {.name = "Сохранить как"},
         {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
     };
