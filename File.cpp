@@ -213,19 +213,19 @@ std::vector<StudentInfo> File::loadFromFile(){
 }
 
 // Сохранение базы данных в файл
-void File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
+bool File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
     // Тип берем по расширению, а не по dir.type(): файла может еще не быть на диске
     const fs::path ext = dir.path.extension();
     const bool is_csv = (ext == ".csv");
     if (!is_csv && ext != ".txt") {
         LOG_ERROR("Ошибка типа файла при сохранении: " + pathToUtf8(dir.path));
-        return;
+        return false;
     }
 
     std::ofstream out(dir.path, std::ios::trunc);
     if (!out.is_open()) {
         LOG_ERROR("Не удалось открыть файл для записи: " + pathToUtf8(dir.path));
-        return;
+        return false;
     }
 
     const std::string sep = " | ";
@@ -251,11 +251,12 @@ void File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
     out.close();
     if (out.fail()) {
         LOG_ERROR("Ошибка записи в файл: " + pathToUtf8(dir.path));
-        return;
+        return false;
     }
 
     LOG_INFO("Данные сохранены в файл: " + pathToUtf8(dir.path) + ", записей: " + std::to_string(db.size()));
     setFile(DirectoryEntry(dir.path)); // Рабочим файлом становится сохраненный
+    return true;
 }
 
 void Explorer::fillFiles() {

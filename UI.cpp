@@ -1,5 +1,6 @@
 #include <format>
 #include <chrono>
+#include <algorithm>
 #include "UI.h"
 #include "Student.h"
 
@@ -291,7 +292,7 @@ bool MainMenu::beforeShow() {
     const bool file_exist = file.exist();
     const bool modif = data.getModif();
     if (modif) {
-        menu_out.before_show = "Выбранный файл изменен смена файла и выход недоступны";
+        menu_out.before_show = "Выбранный файл изменен: смена файла недоступна";
     }
     else menu_out.before_show = "";
 
@@ -353,37 +354,23 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
         data.changeFilter(false);
     }
 
-    menu_out.menu.resize(data.sizeIfFilter()); //делаем заренее размер массива
-
-    if (menu_out.menu.size() <= 0) {
-        LOG_WARN("Размер базы = 0");
-        return;
-    }
-    size_t _row = 0;
     for (size_t i = 0; i < data.size(); ++i)
     {
-        if (data.isOnfilter() && !data.inFilter(i)) { // если данные фильтруются и поле не совпало
-            continue;
-        }
+        MenuStr m = {};
+        m.name = "";
+		m.param = [this, i]() {return createString(i); }; // создаем строку для отображения
+		m.state_aft = StateType::EditMenu;
         
-        menu_out.menu[_row].name = "";
-
-        menu_out.menu[_row].param =
-            [this, i]() {
-            return createString(i);
-            };
-
-        menu_out.menu[_row].show = false;
-        menu_out.menu[_row].enter = true;
-
-		menu_out.menu[_row].state_aft = StateType::EditMenu;
-        _row++;
+        
+        menu_out.menu.push_back(m);
     }
+    menu_out.total.row = menu_out.menu.size();
 
     menu_out.ActMark = "";
     menu_out.InactMark = "";
     menu_out.before_state = StateType::MainMenu;
 };
+
 
 std::string Viewer::createString(size_t row)
 {
@@ -408,31 +395,46 @@ std::string Viewer::createString(size_t row)
 bool Viewer::beforeShow() {
     windowSize();
 
-    if (data.empty()) { 
-        LOG_ERROR("В файле данных о студентах нет записи"); 
-        std::cout << "Нет данных для отображения.\n"; 
-        return false; 
-    }    
-
-    menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
-    
-    //делаем прокрутку через отображение некотороых пунктов
-	if (menu_out.act.row < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
-        first_row = 0;
-    }
-	else if (menu_out.act.row >= first_row + MENU_SHOW_LENGTH - MENU_NUM_TO_SHOW) { // Если активная строка внизу, то прокручиваем вниз
-        first_row = min(menu_out.act.row - MENU_SHOW_LENGTH + MENU_NUM_TO_SHOW, menu_out.total.row - MENU_SHOW_LENGTH);
-    }
-	else if (menu_out.act.row <= first_row + MENU_NUM_TO_SHOW) { 
-        first_row = max(menu_out.act.row - MENU_NUM_TO_SHOW, 0);
+    if (data.empty()) {
+        LOG_ERROR("В файле данных о студентах нет записи");
+        std::cout << "Нет данных для отображения.\n";
+        return false;
     }
 
-    size_t last_row = min(first_row + MENU_SHOW_LENGTH, menu_out.total.row); // Либо последняя строка, либо посчитали
-
-    for (size_t i = 0; i < menu_out.total.row; ++i) {
-        menu_out.menu[i].show =
-            i >= first_row && i < last_row; // выбираем показывать или нет строку
+    std::vector<size_t> visible; //индексы видимых индексов
+    for (size_t i = 0; i < menu_out.menu.size(); ++i) {
+        if (!data.isOnfilter() || data.inFilter(i))
+            visible.push_back(i);//только прошедшие фильтр
     }
+    if (visible.empty()) {// фильтр ничего не оставил
+        LOG_WARN("Нет полей соответствующих фильтру");
+        data.changeFilter(false);
+        for (size_t i = 0; i < menu_out.menu.size(); ++i)
+            visible.push_back(i); //добавляем все
+    }
+    const size_t total = visible.size();
+
+    auto it = std::lower_bound(visible.begin(), visible.end(), menu_out.act.row); //Находим первую видимую запись, индекс которой не ниже активной
+    if (it == visible.end()) --it;       // act.row за последней видимой
+    menu_out.act.row = *it; //выставляем активную на ту, которую видно
+    size_t real_act = static_cast<size_t>(it - visible.begin()); // реальнй индекс активной строки
+
+    const size_t max_first = total > MENU_SHOW_LENGTH ? total - MENU_SHOW_LENGTH : 0; // Вычисляем максимально возможное начало окна
+    first_row = (std::min)(first_row, max_first); 
+
+    if (real_act < first_row + MENU_NUM_TO_SHOW) { // вверх
+        first_row = real_act > MENU_NUM_TO_SHOW ? real_act - MENU_NUM_TO_SHOW : 0;
+    }
+    else if (real_act + MENU_NUM_TO_SHOW >= first_row + MENU_SHOW_LENGTH) { // вниз
+        first_row = (std::min)(real_act + MENU_NUM_TO_SHOW + 1 - MENU_SHOW_LENGTH, max_first);
+    }
+    const size_t last_row = (std::min)(first_row + MENU_SHOW_LENGTH, total);
+
+    // 4. Расставляем show
+    for (auto& m : menu_out.menu) m.show = false;
+    for (size_t r = first_row; r < last_row; ++r)
+        menu_out.menu[visible[r]].show = true;
+
     return true;
 }
 

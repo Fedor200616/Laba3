@@ -117,7 +117,7 @@ namespace validate {
         for (std::size_t i = 1; i < w.size(); ++i) {
             wchar_t c = w[i];
 
-            if (!(isLatinLower(c) || isCyrLower(c) || !isLatinUpper(c) || !isCyrUpper(c) ||
+            if (!(isLatinLower(c) || isCyrLower(c) || isLatinUpper(c) || isCyrUpper(c) ||
                 c == L'-' || c == L'_' || c == L'\''))
                 return false;
         }
@@ -175,7 +175,7 @@ namespace validate {
             return true;
 
         // Проверка длины пароля
-        if (w.size() < PASS_MIN || w.size() >= PASS_MAX)
+        if (w.size() <= PASS_MIN || w.size() >= PASS_MAX)
             return false;
 
         bool capital = false;
@@ -309,7 +309,7 @@ void DataBase::updateNum() {
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::setField(size_t row, Inf col, std::string str) {
-    setModif();
+
     LOG_INFO("Поле изменено: строка " + std::to_string(row) +
         " колонка " + std::to_string(infToSize(col)) +
         " старое поле " + getField(row, col) +
@@ -342,6 +342,7 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         LOG_ERROR("Ошбика ввода, неизвестный тип колонки.");
         return 0;
     }
+    setModif();
     return 1;
 }
 /// <summary>
@@ -357,7 +358,6 @@ bool DataBase::setField(size_t row, size_t col, std::string str) {
 }
 
 void DataBase::removeRow(size_t row) {
-    setModif();
     if (row >= info.size()) {
         LOG_WARN("Попытка удалить несуществующую строку");
         return;                 // пустая база или неверный индекс
@@ -368,10 +368,11 @@ void DataBase::removeRow(size_t row) {
     }
     info.erase(info.begin() + row);
     updateNum();
+    setModif();
 }
 
 void DataBase::insertRow(size_t row) {
-    setModif();
+    
     if (row > info.size()) row = info.size(); // Если указанная строка ввода больше массива, то это просто последняя строка
 
     // Референсная строка: та, перед которой вставляем (если она есть)
@@ -380,6 +381,7 @@ void DataBase::insertRow(size_t row) {
 
     info.insert(info.begin() + row, StudentInfo{ 0, "", "", "", "" });
     updateNum();
+    setModif();
 }
 
 /// <summary>
@@ -390,15 +392,20 @@ void DataBase::insertRow(size_t row) {
 /// <param name="new_str">новая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
-    setModif();
+	bool is_edited = false;
     if (!validate::check(sizeToInf(col), str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
         return 0;
     }
     std::vector<size_t> filt_row_arr = getFilterHit(col, str); //Массив индексов подпадающих под поиск
     for (int i = 0; i < filt_row_arr.size(); i++) {
-        setField(filt_row_arr[i], col, new_str);
+        is_edited = setField(filt_row_arr[i], col, new_str);
     }
+	if (!is_edited) {
+		LOG_ERROR("Ошибка изменения поля");
+		return 0;
+	}
+    setModif();
     return 1;
 }
 

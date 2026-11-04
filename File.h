@@ -148,7 +148,7 @@ public:
     }
 
     std::vector<StudentInfo> loadFromFile();
-    void saveToFile(DataBase& db, const DirectoryEntry& dir);
+    bool saveToFile(DataBase& db, const DirectoryEntry& dir);
     fs::path getFilePath() const {return filePath;}
     DirectoryEntry getFileDirEntry() const { return DirectoryEntry(filePath); }
     bool exist() const {

@@ -41,8 +41,9 @@ void Application::run() {
         switch (current_state) {
 		case StateType::Save: {
 			if (file_manager.exist()) {
-				file_manager.saveToFile(students_info, file_manager.getFileDirEntry());
-                students_info.load(file_manager.loadFromFile());
+				if (file_manager.saveToFile(students_info, file_manager.getFileDirEntry())) {
+					students_info.load(file_manager.loadFromFile());
+				}
 			}
 			else {
 				LOG_ERROR("Ошибка сохранения: файл не выбран");
