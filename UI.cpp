@@ -784,12 +784,12 @@ ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogi
 
 //==========================FilterMenu================================
 FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
-    field_int = data.getFilterCol();
-    find_str = data.getFilterStr();
+    // field_int и field уже выставлены по p.col + 1 в FindMenuLogic
+    find_str = data.getFilterStr(); 
     menu_out.menu[1].name = "Фильтр по тексту";
     menu_out.menu[2].show = false;
     menu_out.menu[4].name = "Применить фильтр";
-    menu_out.menu[4].act_aft = [this]() {return data.changeFilter(field_int, find_str, true); };
+    menu_out.menu[4].act_aft = [this]() { data.changeFilter(field_int, find_str, true); };
     menu_out.menu[4].state_aft = StateType::ViewerTab;
     menu_out.before_state = StateType::ViewerTab;
 }

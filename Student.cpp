@@ -289,7 +289,7 @@ bool DataBase::isOnfilter() const {
 }
 
 std::string DataBase::getFilterInf() const {
-    if (filter_col == 0)
+    if (filter_col == 0 || filter_token.empty())
         return "";
     else
         return filter_token + ", в колонке " + HEADER[filter_col];
