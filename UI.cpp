@@ -47,10 +47,6 @@ namespace UI {
         case SelType::Selected:
             cell_str = "\033[30;47m";          // серый фон
             break;
-
-        case SelType::Yellow:
-            cell_str = "\033[30;43m";          // жёлтый фон
-            break;
         case SelType::Underlined:
             cell_str = "\033[4;97;40m";
             break;
@@ -152,12 +148,11 @@ bool MenuLogic::beforeShow() {
 StateType MenuLogic::menuShow()
 {
     StateType next_state = StateType::NONE;
-    while (next_state == StateType::NONE){
-		if (!beforeShow()) {
-			LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
-			return StateType::_ERROR;
-		}
-        while (!menu_out.menu[menu_out.act.row].show) menu_out.act.row++;
+    while (next_state == StateType::NONE) {
+        if (!beforeShow()) {
+            LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
+            return StateType::_ERROR;
+        }
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
     }
@@ -165,27 +160,37 @@ StateType MenuLogic::menuShow()
 }
 
 std::string MenuLogic::showUI() {
+    const size_t menu_size = menu_out.menu.size();
 
-    size_t act_row = menu_out.act.row; //ссылка на активную строку для удобства
-    static int first_row = 0;
+    if (menu_size > 0) { // У меню без пунктов выбирать нечего
+        // Ищем ближайший показанный и доступный пункт, начиная с активного
+        const size_t start = menu_out.act.row < menu_size ? menu_out.act.row : 0;
+        menu_out.act.row = start; // Если подходящего нет (как в EditField), остаемся на стартовом
+        for (size_t i = 0; i < menu_size; ++i) {
+            const size_t idx = (start + i) % menu_size;
+            if (menu_out.menu[idx].show && menu_out.menu[idx].enter) {
+                menu_out.act.row = idx;
+                break;
+            }
+        }
+    }
 
     std::ostringstream ss;
-	ss << "\033[0m"; // Сброс цвета и стиля
-    if(!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
+    ss << "\033[0m"; // Сброс цвета и стиля
+    if (!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
         ss << menu_out.before_show << '\n'; //Отображение шапки
 
-    for (size_t i = 0; i < menu_out.total.row; i++) {
+    for (size_t i = 0; i < menu_out.total.row && i < menu_size; i++) {
+        if (!menu_out.menu[i].show)
+            continue; // Скрытый пункт ничего не выводит, в том числе маркеры
         ss << (menu_out.act.row == i ? menu_out.ActMark : menu_out.InactMark);
-        if (menu_out.menu[i].show) {
-            ss << menu_out.menu[i].name;
-            if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
-                ss << ' ' << menu_out.menu[i].param();
-            ss << "\033[K\n";
-        }
+        ss << menu_out.menu[i].name;
+        if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
+            ss << ' ' << menu_out.menu[i].param();
+        ss << "\033[K\n";
     }
     ss << "\033[0m\n";
     ss << menu_out.post_show;
-
 
     return ss.str();
 }
@@ -198,34 +203,20 @@ StateType MenuLogic::handleNav() {
     int itter = 0;
     switch (nav) {
     case MenuNav::Up:
-        do {
-            if (menu_out.act.row > 0) {
-                menu_out.act.row--;
+        for (size_t i = (menu_out.act.row < menu_out.menu.size() ? menu_out.act.row : menu_out.menu.size()); i > 0; --i) {
+            if (menu_out.menu[i - 1].show && menu_out.menu[i - 1].enter) { // ближайший доступный пункт выше
+                menu_out.act.row = i - 1;
+                break;
             }
-            itter++;
-			if (itter > menu_out.total.row) {
-				LOG_ERROR("Ошибка в навигации по меню.");
-                menu_out.act.row = act_row;
-			}
-        } while (
-            !menu_out.menu[menu_out.act.row].show ||
-            !menu_out.menu[menu_out.act.row].enter
-            );
+        }
         break;
     case MenuNav::Down:
-        do {
-            if (menu_out.act.row + 1 < menu_out.total.row) {
-                menu_out.act.row++;
+        for (size_t i = menu_out.act.row + 1; i < menu_out.total.row && i < menu_out.menu.size(); ++i) {
+            if (menu_out.menu[i].show && menu_out.menu[i].enter) { // ближайший доступный пункт ниже
+                menu_out.act.row = i;
+                break;
             }
-            itter++;
-            if (itter > menu_out.total.row) {
-                LOG_ERROR("Ошибка в навигации по меню.");
-                menu_out.act.row = act_row;
-            }
-        } while (
-            !menu_out.menu[menu_out.act.row].show ||
-            !menu_out.menu[menu_out.act.row].enter
-            );
+        }
         break;
     case MenuNav::Left:
         if (menu_out.act.col > 0) menu_out.act.col--;
@@ -274,7 +265,7 @@ YesNoMenu::YesNoMenu(std::string str, StateType before) : bef_str(str), bef_stat
 
 //=======================MainMenu======================
 
-MainMenu::MainMenu(File& f) : file(f){
+MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
     LOG_INFO("Запуск конструктора MainMenu");
     menu_out.total.col = 1;
     menu_out.act = {0, 0};
@@ -284,10 +275,10 @@ MainMenu::MainMenu(File& f) : file(f){
         {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
         {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
-        {.name = "Отменить изменения"},
-        {.name = "Сохранить"}, //4
+        {.name = "Отменить изменения", .act_aft = [this]() {data.load(file.loadFromFile()); data.setModif(false); }},
+        {.name = "Сохранить", .act_aft = [this]() {file.saveToFile(data, file.getFileDirEntry()); }}, //4
         {.name = "Сохранить как"},
-        {.name = "Выйти из программы"}, //6
+        {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
     };
     menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
                             "Клавишу Enter для выбора пункта меню";
@@ -295,9 +286,28 @@ MainMenu::MainMenu(File& f) : file(f){
     menu_out.before_state = S::MainMenu;
 }
 
-std::string MainMenu::path_str(){
-    displaySet(file.exist());
-    if(!file.exist())
+bool MainMenu::beforeShow() {
+    MenuLogic::beforeShow();
+    const bool file_exist = file.exist();
+    const bool modif = data.getModif();
+    if (modif) {
+        menu_out.before_show = "Выбранный файл изменен смена файла и выход недоступны";
+    }
+    else menu_out.before_show = "";
+
+    menu_out.menu[0].enter = !modif; // не даем поменять файл, если были изменения
+    menu_out.menu[1].show = file_exist;
+    menu_out.menu[2].show = file_exist;
+    menu_out.menu[3].show = file_exist && modif; // отмена и сохранение нужны только при изменениях
+    menu_out.menu[4].show = file_exist && modif;
+    menu_out.menu[5].show = file_exist;
+    menu_out.menu[6].show = !modif; // не даем выйти, пока не проработали изменения
+
+    return true;
+}
+
+std::string MainMenu::path_str() {
+    if (!file.exist())
         return "Выберите файл";
     return pathToUtf8(file.getFilePath());
 }
@@ -791,7 +801,7 @@ FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p
     menu_out.menu[4].param = [this]() { return createString(); };
     menu_out.menu[4].act_aft = [this]() { pos = pos_of_find; };   // перейти к найденной строке
     menu_out.menu[4].state_aft = StateType::Viewer;
-    menu_out.before_state = StateType::Viewer;
+    menu_out.before_state = StateType::MainMenu;
 }
 
 bool FindMenu::beforeShow() {
@@ -1201,10 +1211,8 @@ std::string ExplorerTabLogic::inputStr() const {
     const std::string border = repeatStr("─", NAME_LEN + 3);
 
     ss << "\033[K\n";
-    ss << " " << title << "\033[K\n";
-    ss << " ┌" << border << "┐\033[K\n";
-    ss << " │ " << UI::padRight(input_line.display(), NAME_LEN + 1) << " │\033[K\n"; // +1 под курсор
-    ss << " └" << border << "┘\033[K\n";
+    ss << " " << title << "\033[K";
+    ss << UI::padRight(input_line.display(), NAME_LEN + 1) << " \033[K\n"; 
 
     const std::string text = input_line.text();
     if (text.empty()) {

@@ -31,6 +31,21 @@ public:
     Application(int argc, char* argv[]);
 
     void run();
-
 };
 
+class BackUpHandle {
+private:
+    DataBase& base;
+    File& file;
+    Info& programm_info;
+
+    std::vector<StudentInfo> ref_info; //Копия массива с первого открытия файла
+
+    void instantBackup();
+    void check_mod();
+    
+public:
+    void updateRef();
+    void backupUpdate();
+
+};

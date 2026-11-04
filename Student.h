@@ -55,6 +55,7 @@ private:
     size_t filter_col = 1;          // Колонка, по которой работает фильтр
     std::string filter_token = "";       // Строка поиска фильтра
 
+    bool is_modified = false; // Была ли модифицирована база
 public:
     // Константы
     const int NAME_WIDTH = 20;      // Длина поля имени
@@ -118,7 +119,11 @@ public:
     // Пуста ли база
     bool empty() const { return info.empty(); }
 
+    bool getModif() const { return is_modified; }
+
     // ---------- Изменение данных ----------
+
+    void setModif(bool val = true) { is_modified = val; };
 
     // Перенумеровать поле row у всех записей (1, 2, 3, ...)
     void updateNum();

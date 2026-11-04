@@ -18,7 +18,7 @@
 
 
 namespace UI {
-    enum class SelType { Selected, Yellow, Underlined};
+    enum class SelType { Selected, Underlined};
 
     size_t utf8Length(const std::string& str);
 
@@ -120,13 +120,16 @@ protected:
 
 class MainMenu : public MenuLogic {
 public:
-    MainMenu(File& f);
+    MainMenu(File& f, DataBase& b);
 
 private:
     File& file;
+    DataBase& data;
 
     void displaySet(bool file_exist);
     std::string path_str();
+
+    bool beforeShow() override;
 
 };
 
@@ -148,7 +151,7 @@ public:
         menu_out.before_show = "Недопустимые символы в введенной строке " + str;
         switch (inf) {
         case Inf::name:
-            menu_out.post_show = "В фамилии студента допустимы только маленькие буквы и знаки -, _, ' \n";
+            menu_out.post_show = "В фамилии студента допустимы только буквы и знаки -, _, ' \n";
             break;
         case Inf::group:
             menu_out.post_show = "В номере группы допустимы только буквы, цифры, дефис и подчёркивание \n";
