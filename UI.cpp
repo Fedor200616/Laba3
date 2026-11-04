@@ -301,7 +301,6 @@ bool MainMenu::beforeShow() {
     menu_out.menu[3].show = file_exist && modif; // отмена и сохранение нужны только при изменениях
     menu_out.menu[4].show = file_exist && modif;
     menu_out.menu[5].show = file_exist;
-    menu_out.menu[6].show = !modif; // не даем выйти, пока не проработали изменения
 
     return true;
 }
