@@ -14,12 +14,12 @@ Application::Application(int argc, char* argv[])
 
     LOG_INFO(log_message);
 
-    fs::path start_path = app_info.getStartPath();
-    if (!start_path.empty() && fs::exists(start_path)) { // Импортируем файл, если он указан в флагах запуска
-        auto loaded_students = file_manager.loadFromFile(); 
+    fs::path start_path = app_info.getStartPath(); //получаем путь к exe файлу
+    if (!start_path.empty() && fs::exists(start_path)) { // если флаг указан в аргументах запуска
+        auto loaded_students = file_manager.loadFromFile(); // получаем данные о студентках
         students_info.load(loaded_students);
 
-        current_state = StateType::Viewer;
+        current_state = StateType::MainMenu;
         start_with_path = true;
     }
     else {
@@ -41,7 +41,7 @@ void Application::run() {
             db_act_pos = viewer.getActivePosition();
             break;
         }
-        case StateType::ViewerTab: {
+        case StateType::ViewerTab: { // Мену работы с полем данных, после нажатия ТАБ
             ViewerTab viewer_tab(students_info);
             current_state = viewer_tab.menuShow();
             break;
@@ -65,13 +65,13 @@ void Application::run() {
             current_state = menu.menuShow();
             break;
         }
-        case StateType::FilterMenu: {
+        case StateType::FilterMenu: { // меню фильтра данных студентов
             LOG_INFO("Меню фильтра");
             FilterMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();
             break;
         }
-        case StateType::FindMenu: {
+        case StateType::FindMenu: { // мену поиска данных о студентах
             LOG_INFO("Меню поиска");
             FindMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();

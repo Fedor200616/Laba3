@@ -9,12 +9,12 @@
 
 int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8); 
+    SetConsoleCP(CP_UTF8); // Выставляем кодировку UTF-8
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode = 0;
     GetConsoleMode(h, &mode);
-    SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    Application app(argc, argv);
-    app.run();
+	SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING); //включаем поддержку красоты в консоли
+    Application app(argc, argv); // создаем обьект основного контроллера приложения, контроллера
+    app.run(); //запускаем программу
     return 0;
 }
