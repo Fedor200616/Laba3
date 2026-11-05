@@ -33,7 +33,6 @@ Application::Application(int argc, char* argv[])
 void Application::run() {
     // Первоначальная очистка экрана
     std::cout << "\033[2J\033[H";
-	StateType prev_state = StateType::MainMenu;
 	bool exit_flag = false;
     while (!exit_flag) {
 		system("cls"); // Очистка экрана для Windows
@@ -80,7 +79,6 @@ void Application::run() {
                 menu.goToDir(selEntry.path); // Возвращаемся в папку, где были (в том числе после меню Tab)
             current_state = menu.menuShow();
             if (current_state == StateType::ExplorerOutFile) {
-                bool norm = true;
                 File buf(menu.getSelFile());
                 if (buf.exist() && buf.checkHeader()) {
                     if (file_manager.setFile(menu.getSelFile())) {
@@ -135,7 +133,7 @@ void Application::run() {
             current_state = edit_field.menuShow();
             break;
         }
-        case StateType::ReplaceAll: { // класс замены полей выделенной колнки
+        case StateType::ReplaceAll: { // класс замены полей выделенной колонки
             LOG_INFO("Изменение или поиск всех полей");
             ReplaceMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();
@@ -164,14 +162,14 @@ void Application::run() {
                 }
                 else {
                     exit_flag = false;
-					current_state = StateType::MainMenu; //Ну выход из программы возможент только из главного меню
+					current_state = StateType::MainMenu; //Ну выход из программы возможен только из главного меню
                 }
             }
             else 
 				exit_flag = true;
             break;
         }
-        case StateType::_ERROR:
+        case StateType::ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";
 			std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";
@@ -186,7 +184,6 @@ void Application::run() {
 			current_state = StateType::MainMenu;
             break;
         }
-        prev_state = buf_state;
     }
 }   
 

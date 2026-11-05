@@ -1,21 +1,20 @@
 #include "Input.h"
 #include <Windows.h>
-#include <conio.h>
 
 namespace Encoding {
     std::string toUtf8(const std::wstring& w) { //Функция перевода широких строк  в обычные в utf8
         if (w.empty()) return {};
-        int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+        int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), static_cast<int>(w.size()), nullptr, 0, nullptr, nullptr);
         std::string s(n, '\0');
-        WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), s.data(), n, nullptr, nullptr);
+        WideCharToMultiByte(CP_UTF8, 0, w.data(), static_cast<int>(w.size()), s.data(), n, nullptr, nullptr);
         return s;
     }
 
     std::wstring fromUtf8(const std::string& s) { // Перевод из строки в Wstring с utf8
         if (s.empty()) return {};
-        int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0);
+        int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), nullptr, 0);
         std::wstring w(n, L'\0');
-        MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), w.data(), n);
+        MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), w.data(), n);
         return w;
     }
 }
@@ -32,11 +31,6 @@ namespace input {
         return true;
     }
 
-    /// <summary>
-    /// Получение и преобарзование нажатия в клавише
-    /// </summary>
-    /// <param name="text_ent">флаг того что вводится текст, чтоб не пропускать 224</param>
-    /// <returns>Символ или key от нажатия</returns>
     KeyEvent readKeyEvent() {
         wint_t c = _getwch();
 

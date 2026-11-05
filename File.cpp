@@ -13,9 +13,9 @@ namespace {
     // Удаление UTF-8 BOM, если он есть
     inline void stripBom(std::string& s) {
         if (s.size() >= 3 &&
-            (unsigned char)s[0] == 0xEF &&
-            (unsigned char)s[1] == 0xBB &&
-            (unsigned char)s[2] == 0xBF) {
+            static_cast<unsigned char>(s[0]) == 0xEF &&
+            static_cast<unsigned char>(s[1]) == 0xBB &&
+            static_cast<unsigned char>(s[2]) == 0xBF) {
             s.erase(0, 3);
         }
     }
@@ -49,8 +49,12 @@ namespace {
     }
 }
 
-// Функция копирования строк фаайла в контейнер строки базы данных
-StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i, char sep_ch) {
+DirectoryEntry::DirectoryEntry(const fs::path &f_path, PathType f_type): path(f_path), file_type(f_type) {
+    init();
+}
+
+// Функция копирования строк файла в контейнер строки базы данных
+StudentInfo File::copyFromString(const std::string& str_buf, const unsigned int i, const char sep_ch) {
     StudentInfo res = { i, "", "", "", "" }; 
     std::istringstream iss(str_buf); // используем поток ввода строки из файла
     std::string field; // буфер поля в файле
@@ -92,7 +96,7 @@ StudentInfo File::copyFromString(const std::string& str_buf, unsigned int i, cha
     return res;
 }
 
-bool File::checkHeader() {
+bool File::checkHeader() const {
     if (filePath.empty() || !fs::exists(filePath))
         return false;
 
@@ -143,8 +147,6 @@ bool File::setFile(const DirectoryEntry& de) {
 std::vector<StudentInfo> File::loadFromFile(){
     std::vector<StudentInfo> result;
 	LOG_INFO("Открытие файла: " + pathToUtf8(filePath));
-    bool sep_change = 0; // Флаг смены разделителя, если 1 раз сменился, то не , и не | , то ошибка
-    bool is_norm = 0; // Флаг распознания шапки таблицы
     bool first_line = true; // флаг первой строки
     bool header_found = false; // Флаг нахождения заголовка
     if (filePath.empty() || !fs::exists(filePath)) {
@@ -178,7 +180,7 @@ std::vector<StudentInfo> File::loadFromFile(){
 
         // Первая непустая строка: определяем разделитель по шапке
         if (!header_found) {
-            const char separators[] = { '|', ',', ';' };
+            constexpr char separators[] = { '|', ',', ';' };
             bool ok = false;
 
             for (char sep : separators) {
@@ -277,7 +279,7 @@ void Explorer::fillFiles() {
     }
 
     for (const auto& entry : fs::directory_iterator(curr_path)) { //Построчечно проходимся по файлам в директории
-         file_arr.push_back(entry.path());
+         file_arr.emplace_back(entry.path());
     }
 }
 
@@ -285,7 +287,7 @@ std::vector<DirectoryEntry> Explorer::fileArr() const {
     if(!file_arr.empty())
         return file_arr;
     else {
-        LOG_WARN("В директории отсутсвует информация Explorer::fileArr()");
+        LOG_WARN("В директории отсутствует информация Explorer::fileArr()");
         DirectoryEntry parent_path(curr_path.parent_path(), PathType::BackDir);
         std::vector<DirectoryEntry> arr;
         arr.push_back(parent_path);
@@ -323,14 +325,14 @@ OpenResult Explorer::openPath(const DirectoryEntry& entry) {
     default:
         return OpenResult::Failed;
     }
-    return OpenResult::Failed;
+    return OpenResult::Failed; // на всякий случай
 }
 
 DirectoryEntry Explorer::getFileEntry() const {
     return selected_entry;
 }
 
-void Explorer::createTXT(std::string name) {
+void Explorer::createTXT(const std::string& name) const {
     fs::path path = curr_path / utf8ToPath(name);
 
     if (path.extension() != ".txt")
@@ -353,14 +355,13 @@ void Explorer::createTXT(std::string name) {
 }
 
 // Создание CSV
-void Explorer::createCSV(std::string name) {
+void Explorer::createCSV(const std::string& name) const {
     fs::path path = curr_path / utf8ToPath(name);
 
     if (path.extension() != ".csv")
         path += ".csv";
 
-    std::error_code ec;
-    if (fs::exists(path, ec)) {
+    if (std::error_code ec; fs::exists(path, ec)) {
         LOG_WARN("Файл уже существует: " + pathToUtf8(path));
         return;
     }
@@ -376,8 +377,8 @@ void Explorer::createCSV(std::string name) {
 }
 
 // Переименование
-void Explorer::renameFile(DirectoryEntry entry, std::string new_name) {
-    fs::path destination = curr_path / utf8ToPath(new_name);
+void Explorer::renameFile(const DirectoryEntry& entry, const std::string &new_name) const {
+    const fs::path destination = curr_path / utf8ToPath(new_name);
 
     std::error_code ec;
 
@@ -402,7 +403,7 @@ void Explorer::renameFile(DirectoryEntry entry, std::string new_name) {
 }
 
 // Удаление
-void Explorer::deleteFile(DirectoryEntry entry) {
+void Explorer::deleteFile(const DirectoryEntry& entry) {
     std::error_code ec;
 
     if (!fs::exists(entry.path, ec)) {
@@ -424,7 +425,7 @@ void Explorer::deleteFile(DirectoryEntry entry) {
 }
 
 // Копирование
-void Explorer::copyFile(DirectoryEntry entry, std::string name) {
+void Explorer::copyFile(const DirectoryEntry& entry, const std::string& name) const {
     if (!fs::is_regular_file(entry.path)) {
         LOG_WARN("Источник не является обычным файлом");
         return;

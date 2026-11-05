@@ -6,8 +6,6 @@
 #include <conio.h>
 #include <cstdlib>
 #include <string>
-#include <sstream>
-#include <iomanip>
 
 #include "States.h"
 #include "File.h"
@@ -31,6 +29,7 @@ namespace UI {
     /// <param name="value">текст</param>
     /// <param name="width">Ширина ячейки</param>
     /// <param name="active">Активна ли ячейка</param>
+    /// <param name="cell_type">Тип подсветки строки при выборе</param>
     void addCell(
         std::ostringstream& ss,
         const std::string& value,
@@ -39,16 +38,16 @@ namespace UI {
         SelType cell_type = SelType::Selected
     );
 
-    std::string header(int num_width, DataBase& data);
+    std::string header(int num_width, const DataBase& data);
 }
 
 struct MenuStr {
-    std::string name = "";
+    std::string name;
     std::function<std::string()> param = nullptr;
     std::function<void()> act_aft = nullptr;
     StateType state_aft = StateType::NONE; //Предполагается, что уже на уровне пункта меню мы будем определять, куда идем после выбора
     
-    bool show = true; // Отображать ли пунтк меню
+    bool show = true; // Отображать ли пункт меню
     bool enter = true; // может ли пользователь выбрать данный пункт меню
 };
 
@@ -63,14 +62,14 @@ struct MenuOut {
     Position total;
     Position act;
 
-    std::string before_show = "";
+    std::string before_show;
     std::vector<MenuStr> menu;
-    std::string post_show = "";
+    std::string post_show;
 
     std::string ActMark = "\033[30;47m";
     std::string InactMark = "\033[0m";
 
-    bool tab_ent = 0;
+    bool tab_ent = false;
 };
 
 enum class MenuNav {
@@ -104,13 +103,13 @@ public:
 protected:
     MenuOut menu_out;   
     
-    MenuNav GetAction(input::key key_code) const;
+    static MenuNav GetAction(input::key key_code) ;
 
     virtual bool beforeShow(); //Функция действия перед показом меню
     std::string showUI(); // Функция формирования строки на вывод
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
-    bool windowSize() const {
+    static bool windowSize() {
         std::cout << "\033[H";
         return true;
     }
@@ -127,7 +126,7 @@ private:
     DataBase& data;
 
     void displaySet(bool file_exist);
-    std::string path_str();
+    std::string path_str() const;
 
     bool beforeShow() override;
 
@@ -135,8 +134,8 @@ private:
 
 class YesNoMenu : public MenuLogic {
 public:
-    YesNoMenu(std::string str, StateType before);
-    bool getRes(){ return res; }
+    YesNoMenu(const std::string &str, StateType before);
+    bool getRes() const{ return res; }
 private:
     StateType bef_state;
     bool res;
@@ -145,7 +144,7 @@ private:
 
 class NotVerMenu : public MenuLogic {
 public:
-    NotVerMenu(std::string s, size_t c) : str(s), inf(sizeToInf(c)) {
+    NotVerMenu(const std::string &s, const size_t c) : inf(sizeToInf(c)), str(s) {
         LOG_INFO("Меню отображения ошибки");
         system("cls");
         menu_out.before_show = "Недопустимые символы в введенной строке " + str;
@@ -200,8 +199,7 @@ private:
     /// </summary>
     /// <param name="i">номер строки</param>
     /// <returns>готовая сформированная строка</returns>
-    std::string createString(size_t i);
-    void updateMenu();
+    std::string createString(size_t i) const;
 
     bool beforeShow() override;
     StateType handleNav() override;
@@ -215,7 +213,7 @@ public:
     ViewerTab(DataBase& db);
 private:
     DataBase& data;
-    std::string filterShow();
+    std::string filterShow() const;
 
     StateType handleNav() override;
 };
@@ -230,16 +228,16 @@ private:
 	bool beforeShow() override;
     StateType handleNav() override;
 
-    std::string createString();
+    std::string createString() const;
     
     //Функции работы с БД
-    void deleteRow();
+    void deleteRow() const;
     enum class AddType {
         Before,
         After,
         End
     };
-    void addStr(AddType type);
+    void addStr(AddType type) const;
 
 public:
     EditMenu(DataBase& base, Position& db_act);
@@ -254,7 +252,7 @@ private:
     Position& pos;
     input::TextInput input_line;
 
-    std::string createString();
+    std::string createString() const;
     StateType handleNav() override;
 };
 
@@ -280,7 +278,7 @@ protected:
 
     void startInput(); // Функция печати для поиска
     void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
-    void editAll();
+    void editAll() const;
 
     bool beforeShow() override;
     StateType handleNav() override;
@@ -300,10 +298,10 @@ public:
 class FindMenu : public FindMenuLogic {
 public: 
     FindMenu(DataBase& d, Position& p, StateType before_state);
-    Position getPos();
+    Position getPos() const;
 private:
     Position pos_of_find;
-    std::string createString();
+    std::string createString() const;
 
     bool beforeShow() override;
 };
@@ -333,9 +331,10 @@ protected:
     bool beforeShow() override;
     StateType handleNav() override;
 
-    std::string createFileStr(size_t index);
+    std::string createFileStr(size_t index) const;
     void select(size_t i);
-    bool to_show(PathType type) {
+
+    static bool to_show(const PathType type) {
         switch (type) {
         case PathType::HIDE:
         case PathType::OtherFile:
@@ -346,13 +345,13 @@ protected:
             return true;
         }
     }
-    std::string beforeStr();
+    std::string beforeStr() const;
     void aftEnter();
 
 public:
-    explicit ExplorerMenuLogic(DirectoryEntry sel); //explicit запрещает преобразования типов
+    explicit ExplorerMenuLogic(const DirectoryEntry& sel); //explicit запрещает преобразования типов
     DirectoryEntry getSelFile() { return selected_file; }
-    fs::path getLastPath() { return explorer.currentPath(); }
+    fs::path getLastPath() const { return explorer.currentPath(); }
     DirectoryEntry getTabEntry() const; // Файл TXT/CSV под курсором, а если его нет - текущая папка
     void goToDir(const fs::path& p); // Перейти в папку (или в папку файла)
 };
@@ -388,6 +387,6 @@ private:
     bool beforeShow() override;
     StateType handleNav() override;
 public:
-    explicit ExplorerTabLogic(DirectoryEntry sel);
+    explicit ExplorerTabLogic(const DirectoryEntry& sel);
 };
 

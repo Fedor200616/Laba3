@@ -1,6 +1,5 @@
 #include "Student.h"
 #include "Input.h"
-#include <cstdint>
 #include <string>
 #include <cctype>
 size_t infToSize(Inf inf) {
@@ -26,14 +25,14 @@ Inf sizeToInf(size_t col) {
 
 static bool search_field(const std::string& data, const std::string& search) {
     if (search.size() > data.size()) {
-        return 0;
+        return false;
     }
     for (int i = 0; i < search.size(); i++) {
-        if (!(search[i] == data[i])) {
-            return 0;
+        if (search[i] != data[i]) {
+            return false;
         }
     }
-    return 1;
+    return true;
 }
 
 
@@ -264,7 +263,7 @@ std::vector<StudentInfo> DataBase::getInfoVec() const {
     return info;
 }
 
-std::vector<size_t> DataBase::getFilterHit(size_t col, std::string str) const {
+std::vector<size_t> DataBase::getFilterHit(size_t col, const std::string &str) const {
     std::vector<size_t> filtered = {};
     for (size_t i = 0; i < size(); i++) {
         if (search_field(getField(i, col), str)) {
@@ -284,7 +283,7 @@ bool DataBase::inFilter(size_t row) const {
     return search_field(getField(row, filter_col), filter_token);
 }
 
-bool DataBase::isOnfilter() const {
+bool DataBase::isOnFilter() const {
     return show_filtered;
 }
 
@@ -316,14 +315,14 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         " новое поле " + str);
     if (row >= info.size()) {
         LOG_ERROR("Выход за границы массива базы данных");
-        return 0;
+        return false;
     }
     if (str.empty()){
         str = vector_nodata;
     }
     if (!validate::check(col, str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
-        return 0;
+        return false;
     }
     switch (col) {
     case Inf::name: 
@@ -339,11 +338,11 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         info[row].num = str; 
         break;
     default: 
-        LOG_ERROR("Ошбика ввода, неизвестный тип колонки.");
-        return 0;
+        LOG_ERROR("Ошибка ввода, неизвестный тип колонки.");
+        return false;
     }
     setModif();
-    return 1;
+    return true;
 }
 /// <summary>
 /// Сеттер ввода в поле
@@ -352,7 +351,7 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
 /// <param name="col">тип колонки ввода</param>
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
-bool DataBase::setField(size_t row, size_t col, std::string str) {
+bool DataBase::setField(size_t row, size_t col, const std::string &str) {
     setModif();
     return setField(row, sizeToInf(col), str);
 }
@@ -364,7 +363,7 @@ void DataBase::removeRow(size_t row) {
     }
     LOG_INFO("Удаление строки: " + std::to_string(row) + ", фамилия: " + info[row].name);
     if (size() <= 1) { // если после удаления база будет пустой
-        insertRow(1); // Дабвляем хотя бы одну строку
+        insertRow(1); // Добавляем хотя бы одну строку
     }
     info.erase(info.begin() + row);
     updateNum();
@@ -391,22 +390,22 @@ void DataBase::insertRow(size_t row) {
 /// <param name="str">строка поиска</param>
 /// <param name="new_str">новая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
-bool DataBase::editAllFind(size_t col, std::string str, std::string new_str) {
+bool DataBase::editAllFind(size_t col, const std::string &str, const std::string &new_str) {
 	bool is_edited = false;
     if (!validate::check(sizeToInf(col), str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
-        return 0;
+        return false;
     }
-    std::vector<size_t> filt_row_arr = getFilterHit(col, str); //Массив индексов подпадающих под поиск
-    for (int i = 0; i < filt_row_arr.size(); i++) {
-        is_edited = setField(filt_row_arr[i], col, new_str);
+    std::vector<size_t> fill_row_arr = getFilterHit(col, str); //Массив индексов подпадающих под поиск
+    for (const size_t i : fill_row_arr) {
+        is_edited = setField(i, col, new_str);
     }
 	if (!is_edited) {
 		LOG_ERROR("Ошибка изменения поля");
-		return 0;
+		return false;
 	}
     setModif();
-    return 1;
+    return true;
 }
 
 void DataBase::changeFilter() {
@@ -417,7 +416,7 @@ void DataBase::changeFilter(bool b) {
     show_filtered = b;
 }
 
-void DataBase::changeFilter(size_t col, std::string str, bool b) {
+void DataBase::changeFilter(size_t col, const std::string &str, bool b) {
     filter_token = str;
     filter_col = col;
     show_filtered = b;

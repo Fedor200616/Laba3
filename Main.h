@@ -1,10 +1,8 @@
 #pragma once
 #include <filesystem>
-#include <iostream>
 #include <string>
 #include <string_view>
 
-#include "Student.h"
 #include "Log.h"
 
 namespace fs = std::filesystem;

@@ -12,16 +12,16 @@ inline std::string pathToUtf8(const fs::path& p) {
     return std::string(u8.begin(), u8.end()); //Проходимся побайтово от начала до конца
 } 
 inline fs::path utf8ToPath(const std::string& s) { // Обратная к pathToUtf8: UTF-8 строка -> путь
-    return fs::path(std::u8string(s.begin(), s.end()));
+    return {std::u8string(s.begin(), s.end())};
 }
-//Синглтон, обьект один
+//Синглтон, объект один
 
 class Log {
 private:
     fs::path log_path;
     bool need_log = false;
 
-    Log() = default; // Закрытый конструктор, гарантия единственного обьекта
+    Log() = default; // Закрытый конструктор, гарантия единственного объекта
 
 public:
     Log(const Log&) = delete;
@@ -32,7 +32,7 @@ public:
         return instance;
     }
 
-    void init(fs::path exe_directory, bool enable_logging) {
+    void init(const fs::path& exe_directory, bool enable_logging) {
         log_path = exe_directory / "app.log";
         need_log = enable_logging;
 
@@ -45,7 +45,7 @@ public:
         }
     }
 
-    void write(const std::string& level, const std::string& message) {
+    void write(const std::string& level, const std::string& message) const {
         if (!need_log) return;
 
         std::ofstream log_file(log_path, std::ios::app);

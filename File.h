@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <sstream>
 #include <Windows.h>
 
 #include "Student.h"
@@ -33,19 +32,17 @@ enum class OpenResult {
 struct DirectoryEntry {
     fs::path path;
     PathType file_type = PathType::NONE;
-    bool real;
-    std::uintmax_t size;
+    bool real{};
+    std::uintmax_t size{};
     std::filesystem::file_time_type last_write;
 
     DirectoryEntry() {
         init();
     };
-    DirectoryEntry(fs::path fp) : path(fp) {
+    DirectoryEntry(const fs::path &fp) : path(fp) {
         init();
     };
-    DirectoryEntry(fs::path f_path, PathType f_type) : path(f_path), file_type(f_type) {
-        init();
-    };
+    DirectoryEntry(const fs::path &f_path, PathType f_type);;
 
     void init() {
         real = type() != PathType::NONE &&
@@ -71,8 +68,8 @@ struct DirectoryEntry {
             return file_type;
         const DWORD attributes = GetFileAttributesW(path.c_str());
 
-        if (attributes != INVALID_FILE_ATTRIBUTES && //Провека на валидность
-            (attributes & FILE_ATTRIBUTE_HIDDEN)) { //проверка что файл скрыт системой
+        if (attributes != INVALID_FILE_ATTRIBUTES && //Проверка на валидность
+            (attributes & FILE_ATTRIBUTE_HIDDEN)) { //проверка, что файл скрыт системой
             return PathType::HIDE;
         }
         const std::wstring name = path.filename().wstring();
@@ -124,7 +121,7 @@ private:
     fs::path filePath = ""; // путь к файлу
     PathType type = PathType::NONE; // тип файла
 
-    StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
+    static StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
 public:
     bool have_marker = false;
 
@@ -150,12 +147,12 @@ public:
     std::vector<StudentInfo> loadFromFile();
     bool saveToFile(DataBase& db, const DirectoryEntry& dir);
     fs::path getFilePath() const {return filePath;}
-    DirectoryEntry getFileDirEntry() const { return DirectoryEntry(filePath); }
+    DirectoryEntry getFileDirEntry() const { return {filePath}; }
     bool exist() const {
         std::error_code ec;
         return !filePath.empty() && fs::is_regular_file(filePath, ec);
     }
-    bool checkHeader();
+    bool checkHeader() const;
 
     // Изменение рабочего файла
     bool setFile(const DirectoryEntry& de);
@@ -166,7 +163,7 @@ private:
     fs::path default_path; // Путь самого первого нахождения окна
     fs::path curr_path; //Путь, по которому находится окно проводника
     DirectoryEntry selected_entry;
-    //DirectoryEntry file_path; //Путь к последнему выбранному файлу, и соответсвенно, файлу с которым ма работаем
+    //DirectoryEntry file_path; //Путь к последнему выбранному файлу, и соответственно, файлу с которым ма работаем
     std::vector<DirectoryEntry> file_arr;
     void fillFiles();
 public:
@@ -180,9 +177,9 @@ public:
     fs::path currentPath() const { return curr_path; }
     void setDefault(fs::path def) { default_path = def; }
 
-    void createTXT(std::string name);
-    void createCSV(std::string name);
-    void renameFile(DirectoryEntry entry, std::string new_name);
-    void deleteFile(DirectoryEntry entry);
-    void copyFile(DirectoryEntry entry, std::string name);
+    void createTXT(const std::string& name) const;
+    void createCSV(const std::string& name) const;
+    void renameFile(const DirectoryEntry& entry, const std::string &new_name) const;
+    static void deleteFile(const DirectoryEntry& entry);
+    void copyFile(const DirectoryEntry& entry, const std::string& name) const;
 };

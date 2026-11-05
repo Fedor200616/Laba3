@@ -9,12 +9,12 @@
 
 int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8); // Выставляем кодировку UTF-8
+    SetConsoleCP(CP_UTF8); // Р’С‹СЃС‚Р°РІР»СЏРµРј РєРѕРґРёСЂРѕРІРєСѓ UTF-8
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD mode = 0;
     GetConsoleMode(h, &mode);
-	SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING); //включаем поддержку красоты в консоли
-    Application app(argc, argv); // создаем обьект основного контроллера приложения, контроллера
-    app.run(); //запускаем программу
+	SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING); //РІРєР»СЋС‡Р°РµРј РїРѕРґРґРµСЂР¶РєСѓ РєСЂР°СЃРѕС‚С‹ РІ РєРѕРЅСЃРѕР»Рё
+    Application app(argc, argv); // СЃРѕР·РґР°РµРј РѕР±СЊРµРєС‚ РѕСЃРЅРѕРІРЅРѕРіРѕ РєРѕРЅС‚СЂРѕР»Р»РµСЂР° РїСЂРёР»РѕР¶РµРЅРёСЏ, РєРѕРЅС‚СЂРѕР»Р»РµСЂР°
+    app.run(); //Р·Р°РїСѓСЃРєР°РµРј РїСЂРѕРіСЂР°РјРјСѓ
     return 0;
 }

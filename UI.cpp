@@ -28,13 +28,6 @@ namespace UI {
         return str + std::string(width - length, ' ');
     }
 
-    /// <summary>
-    /// Вывод на экран отдельной ячейки
-    /// </summary>
-    /// <param name="ss">поток ввода</param>
-    /// <param name="value">текст</param>
-    /// <param name="width">Ширина ячейки</param>
-    /// <param name="active">Активна ли ячейка</param>
     void addCell(
         std::ostringstream& ss,
         const std::string& value,
@@ -67,10 +60,10 @@ namespace UI {
         ss << "|";
     }
 
-    std::string header(int num_width, DataBase& data)
+    std::string header(int num_width, const DataBase& data)
     {
         std::ostringstream ss;
-        ss << " "; // Без этого шапка сьезжает на 1 символ влево
+        ss << " "; // Без этого шапка съезжает на 1 символ влево
         const auto widths = data.getWidthVec();
         for(int i = 0; i < data.INFO_COL_COUNT; i++){
             addCell(
@@ -83,7 +76,7 @@ namespace UI {
     }
 
     // Форматирование времени последнего изменения
-    std::string formatLastWrite(
+    static std::string formatLastWrite(
         const fs::file_time_type& file_time
     ) {
         if (file_time == fs::file_time_type{}) {
@@ -111,7 +104,7 @@ namespace UI {
 }
 
 
-MenuNav MenuLogic::GetAction(input::key key_code) const
+MenuNav MenuLogic::GetAction(input::key key_code)
 {
     switch (key_code)
     {
@@ -142,8 +135,7 @@ MenuNav MenuLogic::GetAction(input::key key_code) const
 }
 
 bool MenuLogic::beforeShow() {
-    windowSize();
-    return true;
+    return windowSize();
 }
 
 StateType MenuLogic::menuShow()
@@ -152,7 +144,7 @@ StateType MenuLogic::menuShow()
     while (next_state == StateType::NONE) {
         if (!beforeShow()) {
             LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
-            return StateType::_ERROR;
+            return StateType::ERROR;
         }
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
@@ -199,10 +191,7 @@ std::string MenuLogic::showUI() {
 
 StateType MenuLogic::handleNav() {
     input::key key = input::getKey();
-    MenuNav nav = GetAction(key);
-	size_t act_row = menu_out.act.row; //буфер активной строки
-    int itter = 0;
-    switch (nav) {
+    switch (MenuNav nav = GetAction(key)) {
     case MenuNav::Up:
         for (size_t i = (menu_out.act.row < menu_out.menu.size() ? menu_out.act.row : menu_out.menu.size()); i > 0; --i) {
             if (menu_out.menu[i - 1].show && menu_out.menu[i - 1].enter) { // ближайший доступный пункт выше
@@ -230,14 +219,14 @@ StateType MenuLogic::handleNav() {
         return menu_out.before_state;
     case MenuNav::Enter: {
         LOG_INFO("Пользователь нажал Enter.");
-        system("cls"); //Иначе текст наславиается
+        system("cls"); //Иначе текст наслаивается
         auto& item = menu_out.menu[menu_out.act.row];
         if (item.act_aft) item.act_aft();
         return item.state_aft;
     }
     case MenuNav::KeyTab:
         LOG_INFO("Нажатие Таба");
-        system("cls"); //Иначе текст наславиается
+        system("cls"); //Иначе текст наслаивается
         menu_out.tab_ent = !menu_out.tab_ent;
         break;
     default:
@@ -249,7 +238,7 @@ StateType MenuLogic::handleNav() {
 
 //=======================YesNoMenu=====================
 
-YesNoMenu::YesNoMenu(std::string str, StateType before) : bef_str(str), bef_state(before), res(false){
+YesNoMenu::YesNoMenu(const std::string &str, const StateType before) : bef_state(before), res(false), bef_str(str){
     menu_out.act = { 0,0 };
     menu_out.total.col = 1;
 
@@ -281,7 +270,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Сохранить как"},
         {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
     };
-    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+    menu_out.post_show = "Используйте стрелки вверх, вниз для перемещения,\n"
                             "Клавишу Enter для выбора пункта меню";
     menu_out.total.row = menu_out.menu.size();
     menu_out.before_state = S::MainMenu;
@@ -306,7 +295,7 @@ bool MainMenu::beforeShow() {
     return true;
 }
 
-std::string MainMenu::path_str() {
+std::string MainMenu::path_str() const {
     if (!file.exist())
         return "Выберите файл";
     return pathToUtf8(file.getFilePath());
@@ -343,14 +332,14 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
         data.getWidthVec()[2] +
         data.getWidthVec()[3] +
         static_cast<int>(menu_out.total.col) +
-        12; // нужно для ровного отображения получено эксп. путем
+        12; // Нужно для ровного отображения получено эксп. путем
 
     menu_out.before_show = UI::header(data.numWidth(), data);
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
         "Используйте стрелочки для навигации, ESC для выхода...\n";
 
     if (data.sizeIfFilter() <= 0) {
-        LOG_WARN("Нет полей соответсвующих фильтру");
+        LOG_WARN("Нет полей соответствующих фильтру");
         data.changeFilter(false);
     }
 
@@ -372,8 +361,7 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
 };
 
 
-std::string Viewer::createString(size_t row)
-{
+std::string Viewer::createString(size_t row) const {
     std::ostringstream ss;
 
     bool active_row = (menu_out.act.row == row); //проверка, активна ли строка
@@ -392,6 +380,7 @@ std::string Viewer::createString(size_t row)
     return ss.str();
 }
 
+
 bool Viewer::beforeShow() {
     windowSize();
 
@@ -403,7 +392,7 @@ bool Viewer::beforeShow() {
 
     std::vector<size_t> visible; //индексы видимых индексов
     for (size_t i = 0; i < menu_out.menu.size(); ++i) {
-        if (!data.isOnfilter() || data.inFilter(i))
+        if (!data.isOnFilter() || data.inFilter(i))
             visible.push_back(i);//только прошедшие фильтр
     }
     if (visible.empty()) {// фильтр ничего не оставил
@@ -417,7 +406,7 @@ bool Viewer::beforeShow() {
     auto it = std::lower_bound(visible.begin(), visible.end(), menu_out.act.row); //Находим первую видимую запись, индекс которой не ниже активной
     if (it == visible.end()) --it;       // act.row за последней видимой
     menu_out.act.row = *it; //выставляем активную на ту, которую видно
-    size_t real_act = static_cast<size_t>(it - visible.begin()); // реальнй индекс активной строки
+    size_t real_act = static_cast<size_t>(it - visible.begin()); // реальный индекс активной строки
 
     const size_t max_first = total > MENU_SHOW_LENGTH ? total - MENU_SHOW_LENGTH : 0; // Вычисляем максимально возможное начало окна
     first_row = (std::min)(first_row, max_first); 
@@ -466,8 +455,8 @@ ViewerTab::ViewerTab(DataBase& db) : data(db) {
     menu_out.before_state = S::Viewer;
 }
 
-std::string ViewerTab::filterShow() {
-    if (data.isOnfilter())
+std::string ViewerTab::filterShow() const {
+    if (data.isOnFilter())
         return "(Включено)";
     else
         return "(Выключено)";
@@ -489,7 +478,7 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
     is_mod = false;
 
     using S = StateType;
-    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
+    if (data.empty()) addStr(AddType::End); // Добавляем хотя бы одну строку, если база совсем пустая
     menu_out.menu = {
         // Item::Row: строка студента, не выбирается
         {.param = [this]() { return createString(); }, .enter = false },
@@ -514,8 +503,7 @@ EditMenu::EditMenu(DataBase& base, Position& db_act) : data(base), pos(db_act){
         "Нажмите Tab для изменения выбора поля редактирования, Esc для возврата в меню просмотра";
 }
 
-std::string EditMenu::createString()
-{
+std::string EditMenu::createString() const {
     std::ostringstream ss;
     UI::SelType sel_type = menu_out.tab_ent ? UI::SelType::Selected : UI::SelType::Underlined;
 
@@ -536,11 +524,11 @@ std::string EditMenu::createString()
 
 bool EditMenu::beforeShow() {
 	bool res = MenuLogic::beforeShow();
-    if (data.size() < 1) addStr(AddType::End); // Дабвляем хотя бы одну строку, если база совсем пустая
+    if (data.empty()) addStr(AddType::End); // Добавляем хотя бы одну строку, если база совсем пустая
 	if (data.empty()) {
 		LOG_ERROR("В файле данных о студентах нет записи");
 		std::cout << "Нет данных для отображения.\n";
-		return 0;
+		return false;
 	}
 	menu_out.total.row = menu_out.menu.size(); // Активная строка для удобства сокращенно
     if (menu_out.tab_ent) {
@@ -548,7 +536,7 @@ bool EditMenu::beforeShow() {
             "Выберите поле в таблице.\n"
             "Используйте стрелки вверх вниз для навигации, Enter для выбора пункта, \n"
             "Нажмите ESC для возврата в меню просмотра";
-		menu_out.act.row = -1; // Прикооол, оно unsigned, но подразумевается что это такое большое число, что оно точно не будет пунктом меню
+		menu_out.act.row = -1; // оно unsigned, но подразумевается что это такое большое число, что оно точно не будет пунктом меню
     }
     else {
         pos.col = menu_out.act.col;
@@ -566,10 +554,7 @@ StateType EditMenu::handleNav() {
     else { // меню перемещения между полями
         LOG_INFO("Меню перемещения между полями");
         input::key key = input::getKey();
-        MenuNav nav = GetAction(key);
-        size_t act_row = menu_out.act.row; //буфер активной строки
-        int itter = 0;
-        switch (nav) {
+        switch (MenuNav nav = GetAction(key)) {
         case MenuNav::KeyTab:
         case MenuNav::Enter:
             LOG_INFO("Нажатие Таба");
@@ -600,12 +585,12 @@ StateType EditMenu::handleNav() {
 	return StateType::NONE;
 }
 
-void EditMenu::deleteRow() { 
+void EditMenu::deleteRow() const {
     data.removeRow(pos.row);
     if (pos.row >= data.size()) pos.row = data.size() - 1;
 }
 
-void EditMenu::addStr(AddType type) {
+void EditMenu::addStr(const AddType type) const {
     switch (type) {
     case AddType::Before:
         data.insertRow(pos.row);
@@ -642,7 +627,7 @@ EditField::EditField(DataBase& db, Position& p) : data(db), pos(p) {
         data.getWidthVec()[pos.col + 1]);
 }
 
-std::string EditField::createString() {
+std::string EditField::createString() const {
     std::ostringstream ss;
     for (size_t i = 0; i < static_cast<size_t>(data.INFO_COL_COUNT); i++) {
         bool cur = (i == pos.col + 1);
@@ -680,8 +665,7 @@ FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, StateType before_state) :
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
-    
-    using S = StateType;
+
     menu_out.menu = {
         {.name = "Поле: ", .param = [this]() {return line(0, field); }, .act_aft = [this]() {changeField(); }},
         {.name = "Найти: ", .param = [this]() {return line(1, find_str); }, .act_aft = [this]() { startInput(); }},
@@ -740,7 +724,7 @@ void FindMenuLogic::changeField() {
     system("cls"); //Происходит наложение текста
 }
 
-void FindMenuLogic::editAll(){
+void FindMenuLogic::editAll() const {
     if (!data.editAllFind(field_int, find_str, repl_str)) {
         NotVerMenu ver_menu(input_line.text(), pos.col + 1);
         ver_menu.menuShow();
@@ -828,11 +812,11 @@ bool FindMenu::beforeShow() {
     return res;
 }
 
-Position FindMenu::getPos() {
+Position FindMenu::getPos() const {
     return pos_of_find;
 }
 
-std::string FindMenu::createString() {
+std::string FindMenu::createString() const {
     std::ostringstream ss;
     for (size_t i = 0; i < static_cast<size_t>(data.INFO_COL_COUNT); i++) {
         UI::addCell(
@@ -847,9 +831,9 @@ std::string FindMenu::createString() {
 
 //==================================Меню проводника=========================================
 
-ExplorerMenuLogic::ExplorerMenuLogic(DirectoryEntry s) : selected_file(s), explorer(s.path), entries(explorer.fileArr()) {
+ExplorerMenuLogic::ExplorerMenuLogic(const DirectoryEntry& s) : selected_file(s), explorer(s.path), entries(explorer.fileArr()) {
     menu_out.total = { explorer.fileArr().size(), 1};
-    menu_out.post_show = "Используйте стрелки вверх, вниз для пермещения,\n"
+    menu_out.post_show = "Используйте стрелки вверх, вниз для перемещения,\n"
         "Клавишу Enter для выбора файла или папки\n"
         "Клавиша Tab - создать, переименовать, копировать или удалить файл, Esc для выхода\n";
     menu_out.before_state = StateType::MainMenu;
@@ -882,21 +866,24 @@ bool ExplorerMenuLogic::beforeShow() {
                 aftEnter();
                 };
             menu_out.menu[i].state_aft = StateType::ExplorerOutFile;
+            break;
+        default:
+            break;
         }
     }
 
-    //делаем прокрутку через отображение некотороых пунктов
+    //делаем прокрутку через отображение некоторых пунктов
     if (real_act < MENU_NUM_TO_SHOW) { // Если активная стрелка в первых строках, то показываем с начала
         first_row = 0;
     }
     else if (real_act >= first_row + MENU_SHOW_LENGTH - MENU_NUM_TO_SHOW) { // Если активная строка внизу, то прокручиваем вниз
-        first_row = min(real_act - MENU_SHOW_LENGTH + MENU_NUM_TO_SHOW, real_total - MENU_SHOW_LENGTH);
+        first_row = (std::min)(real_act - MENU_SHOW_LENGTH + MENU_NUM_TO_SHOW, real_total - MENU_SHOW_LENGTH);
     }
     else if (real_act <= first_row + MENU_NUM_TO_SHOW) {
-        first_row = max(real_act - MENU_NUM_TO_SHOW, 0);
+        first_row = (std::max)(real_act - MENU_NUM_TO_SHOW, size_t{0});
     }
 
-    last_row = min(first_row + MENU_SHOW_LENGTH, real_total); // Либо последняя строка, либо посчитали
+    last_row = (std::min)(first_row + MENU_SHOW_LENGTH, real_total); // Либо последняя строка, либо посчитали
     for (size_t i = 0, c = 0; i < menu_out.total.row; i++) {
         if (menu_out.menu[i].show) {
             menu_out.menu[i].show &=
@@ -925,7 +912,7 @@ DirectoryEntry ExplorerMenuLogic::getTabEntry() const {
         if (t == PathType::TXT || t == PathType::CSV)
             return entries[menu_out.act.row];
     }
-    return DirectoryEntry(explorer.currentPath(), PathType::Folder);
+    return {explorer.currentPath(), PathType::Folder};
 }
 
 void ExplorerMenuLogic::goToDir(const fs::path& p) {
@@ -935,7 +922,7 @@ void ExplorerMenuLogic::goToDir(const fs::path& p) {
         explorer.openPath(DirectoryEntry(dir, PathType::Folder));
 }
 
-std::string ExplorerMenuLogic::createFileStr(size_t index) {
+std::string ExplorerMenuLogic::createFileStr(size_t index) const {
     if (index >= entries.size()) { //Вышли за пределы массива
         return "";
     }
@@ -953,8 +940,8 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
         name = " \\..";
     }
     const std::string icon = entry.typeEmoji();
-    
-    const size_t availableWidth = NAME_WIDTH - CELL_PADDING - ICON_WIDTH;
+
+    constexpr size_t availableWidth = NAME_WIDTH - CELL_PADDING - ICON_WIDTH;
 
     if (UI::utf8Length(name) > availableWidth) {
         const fs::path filePath = entry.path;
@@ -964,7 +951,6 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
         constexpr size_t dotsWidth = 3; // Три точки обозначают пропущенную часть имени.
 
         if (availableWidth > extWidth + dotsWidth) {
-            const size_t stemWidth = UI::utf8Length(stem);
             const size_t keepWidth = availableWidth - extWidth - dotsWidth; // Резервируем место под начало, многоточие и расширение.
 
             // Оставляем примерно половину начала и половину конца.
@@ -976,7 +962,7 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
             size_t chars = 0;
 
             while (prefixPos < stem.size() && chars < prefixWidth) {
-                const unsigned char c =
+                const auto c =
                     static_cast<unsigned char>(stem[prefixPos]);
 
                 if ((c & 0x80) == 0) prefixPos += 1; // начало ASCII
@@ -988,7 +974,7 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
                 ++chars;
             }
 
-            // Начинаем дигаться с конца
+            // Начинаем двигаться с конца
             size_t suffixPos = stem.size();
             chars = 0;
 
@@ -1026,7 +1012,7 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) {
         : UI::formatLastWrite(entry.last_write);
 
     //Формирование строки
-    size_t name_width = index == 1 ? NAME_WIDTH + 1 : NAME_WIDTH; //иначе первая строка почему то сползает
+    size_t name_width = index == 1 ? NAME_WIDTH + 1 : NAME_WIDTH; //иначе первая строка почему-то сползает
     if (index == menu_out.act.row) {
         ss << "\033[30;47m";
     }
@@ -1065,7 +1051,7 @@ void ExplorerMenuLogic::select(size_t i) {
     menu_out.act.row = 1;
 }
 
-std::string ExplorerMenuLogic::beforeStr() {
+std::string ExplorerMenuLogic::beforeStr() const {
     const std::string border(FULL_WIDTH, '-');
     const std::string path = pathToUtf8(explorer.currentPath());
 
@@ -1129,7 +1115,7 @@ namespace {
     }
 }
 
-ExplorerTabLogic::ExplorerTabLogic(DirectoryEntry s) : selected_file(s), explorer(s.path) {
+ExplorerTabLogic::ExplorerTabLogic(const DirectoryEntry& s) : selected_file(s), explorer(s.path) {
     LOG_INFO("Запуск конструктора ExplorerTab");
 
     menu_out.menu = {
@@ -1324,7 +1310,7 @@ void ExplorerTabLogic::applyInput(const std::string& full) {
 
 void ExplorerTabLogic::deleteSel() {
     const std::string name = pathToUtf8(selected_file.path.filename());
-    explorer.deleteFile(selected_file);
+    Explorer::deleteFile(selected_file);
 
     std::error_code ec;
     if (fs::exists(selected_file.path, ec)) {

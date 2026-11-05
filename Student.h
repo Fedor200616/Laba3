@@ -3,8 +3,8 @@
 #include <string>
 #include "Log.h"
 
-const std::string file_nodata = "Нет данных";
-const std::string vector_nodata = "";
+constexpr std::string file_nodata;
+constexpr std::string vector_nodata;
 
 // Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
@@ -54,7 +54,7 @@ private:
 
     bool show_filtered = false;     // Включён ли фильтр (показывать только найденные строки)
     size_t filter_col = 1;          // Колонка, по которой работает фильтр
-    std::string filter_token = "";       // Строка поиска фильтра
+    std::string filter_token;       // Строка поиска фильтра
 
     bool is_modified = false; // Была ли модифицирована база
     void setModif(bool val = true) { is_modified = val; };
@@ -94,7 +94,7 @@ public:
     std::vector<StudentInfo> getInfoVec() const;
 
     // Индексы строк, у которых колонка col подходит под поиск str
-    std::vector<size_t> getFilterHit(size_t col, std::string str) const;
+    std::vector<size_t> getFilterHit(size_t col, const std::string &str) const;
 
     // Индексы строк, подходящих под текущий фильтр (filter_col и filter_token)
     std::vector<size_t> getFilterHit() const;
@@ -103,7 +103,7 @@ public:
     bool inFilter(size_t row) const;
 
     // Включён ли сейчас фильтр
-    bool isOnfilter() const;
+    bool isOnFilter() const;
 
     // Формирования строки о текущих строках фильтра
     std::string getFilterInf() const;
@@ -136,20 +136,20 @@ public:
     void insertRow(size_t row = -1);
 
     // Записать значение в поле по номеру колонки; false, если ввод неверен
-    bool setField(size_t row, size_t col, std::string str = "");
+    bool setField(size_t row, size_t col, const std::string &str = "");
 
     // Записать значение в поле по типу колонки (Inf); false, если ввод неверен
     bool setField(size_t row, Inf col, std::string str = "");
 
     // Заменить в колонке col значение на new_str у всех строк, найденных по поиску str
-    bool editAllFind(size_t col, std::string str, std::string new_str);
+    bool editAllFind(size_t col, const std::string &str, const std::string &new_str);
 
     // Переключить фильтр вкл/выкл
     void changeFilter();
     void changeFilter(bool b);
 
     // Задать фильтр: колонка, строка поиска, включён ли он
-    void changeFilter(size_t col, std::string str, bool b = false);
+    void changeFilter(size_t col, const std::string &str, bool b = false);
 
     // Парсинг базы данных на ошибки
     size_t checkIntegrity();
