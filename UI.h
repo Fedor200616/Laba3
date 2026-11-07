@@ -134,7 +134,8 @@ private:
 
 class YesNoMenu : public MenuLogic {
 public:
-    YesNoMenu(const std::string &str, StateType before);
+    YesNoMenu(const std::string &str, const StateType& before);
+    YesNoMenu(const std::string &str, const StateType& before, const std::string& enter_str, const std::string& cancel_str);
     bool getRes() const{ return res; }
 private:
     StateType bef_state;

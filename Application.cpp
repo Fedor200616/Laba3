@@ -155,7 +155,12 @@ void Application::run() {
         case StateType::EXIT: {
             if (students_info.getModif()) {
                 LOG_WARN("Попытка выхода из программы без сохранения данных");
-				YesNoMenu menu("Данные не были сохранены. Вы уверены, что хотите выйти? \nИзменения будут утеряны.", StateType::EXIT);
+				YesNoMenu menu(
+				    "Данные не были сохранены. Вы уверены, что хотите выйти? \nИзменения будут утеряны.",
+				    StateType::EXIT,
+				    "Отменить изменения и выйти",
+				    "Вернуться в главное меню"
+				    );
                 current_state = menu.menuShow();
                 if (menu.getRes()) {
                     exit_flag = true;

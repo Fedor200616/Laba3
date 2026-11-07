@@ -238,13 +238,28 @@ StateType MenuLogic::handleNav() {
 
 //=======================YesNoMenu=====================
 
-YesNoMenu::YesNoMenu(const std::string &str, const StateType before) : bef_state(before), res(false), bef_str(str){
+YesNoMenu::YesNoMenu(const std::string &str, const StateType& before) : bef_state(before), res(false), bef_str(str){
     menu_out.act = { 0,0 };
     menu_out.total.col = 1;
 
     menu_out.menu = {
         {.name = "Продолжить ", .act_aft = [this]() {res = true; }, .state_aft = bef_state},
         {.name = "Отменить ", .act_aft = [this]() {res = false; }, .state_aft = bef_state}
+    };
+    menu_out.total.row = menu_out.menu.size();
+
+    menu_out.before_show = str;
+    menu_out.post_show = "Используйте стрелочки вверх, вниз и Enter";
+    menu_out.before_state = bef_state;
+}
+
+YesNoMenu::YesNoMenu(const std::string &str, const StateType& before, const std::string& enter_str, const std::string& cancel_str) : bef_state(before), res(false), bef_str(str){
+    menu_out.act = { 0,0 };
+    menu_out.total.col = 1;
+
+    menu_out.menu = {
+            {.name = enter_str, .act_aft = [this]() {res = true; }, .state_aft = bef_state},
+            {.name = cancel_str, .act_aft = [this]() {res = false; }, .state_aft = bef_state}
     };
     menu_out.total.row = menu_out.menu.size();
 
