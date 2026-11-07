@@ -120,21 +120,12 @@ class File {
 private:
     fs::path filePath = ""; // путь к файлу
     PathType type = PathType::NONE; // тип файла
+    char separator = ';';
 
     static StudentInfo copyFromString(const std::string& str_buf, unsigned int i, char sep_ch = '|');
 public:
     bool have_marker = false;
 
-    File(fs::path file) : filePath(file){ //Старый конструктор, остался для совместимости с аргументами cmd
-        LOG_INFO("Запуск конструктора File");
-        LOG_INFO(std::string("Путь к файлу ") + pathToUtf8(filePath));
-        if (filePath.extension() == ".txt")
-            type = PathType::TXT;
-        else if (filePath.extension() == ".csv")
-            type = PathType::CSV;
-        else
-            LOG_ERROR("Ошибка типа файла: расширение файла " + pathToUtf8(filePath.extension()));
-    }
     File(const DirectoryEntry& de) : filePath(de.path), type(de.type()) {
         if (filePath.empty())
             return;
@@ -153,7 +144,7 @@ public:
         std::error_code ec;
         return !filePath.empty() && fs::is_regular_file(filePath, ec) && (type != PathType::ERR);
     }
-    bool checkHeader() const;
+    bool checkHeader();
 
     // Изменение рабочего файла
     bool setFile(const DirectoryEntry& de);
@@ -174,13 +165,6 @@ public:
     };
     std::vector<DirectoryEntry> fileArr() const; //вектор DirectoryEntry файлов в директории
     OpenResult openPath(const DirectoryEntry& entry); // открытие пути
-    DirectoryEntry getFileEntry() const; // получение информации об файле
     fs::path currentPath() const { return curr_path; }
     void setDefault(fs::path def) { default_path = def; }
-
-    void createTXT(const std::string& name) const;
-    void createCSV(const std::string& name) const;
-    void renameFile(const DirectoryEntry& entry, const std::string &new_name) const;
-    static void deleteFile(const DirectoryEntry& entry);
-    void copyFile(const DirectoryEntry& entry, const std::string& name) const;
 };

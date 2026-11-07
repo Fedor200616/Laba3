@@ -35,8 +35,7 @@ namespace {
     }
 
     // Шапка TXT
-    inline std::string headerTXT() {
-        const std::string sep = " | ";
+    inline std::string headerTXT(char sep) {
         return padChars("Имя", 20) + sep
             + padChars("Группа", 12) + sep
             + padChars("Номер", 5) + sep
@@ -64,15 +63,10 @@ StudentInfo File::copyFromString(const std::string& str_buf, const unsigned int 
     while (std::getline(iss, field, sep_ch)) {
         std::string clean_field = trim(field); // удаляем все лишнее в поле
 
-        //Пропускаем первое пустое поле, если строка начиналась с '|'
-        if (clean_field.empty() && field_idx == 0) {
-            continue;
-        }
-
         field_idx++; //увеличиваем индекс колонки
 
-        if (clean_field == file_nodata) {
-            clean_field = vector_nodata; // Либо оставляем "Нет данных", если так нужно по ТЗ
+        if (clean_field == FILE_NODATA) {
+            clean_field = VECTOR_NODATA; //заменяем Нет Данных в таблице
         }
 
         switch (field_idx) {
@@ -96,7 +90,7 @@ StudentInfo File::copyFromString(const std::string& str_buf, const unsigned int 
     return res;
 }
 
-bool File::checkHeader() const {
+bool File::checkHeader() {
     if (filePath.empty() || !fs::exists(filePath))
         return false;
 
@@ -115,8 +109,10 @@ bool File::checkHeader() const {
     for (char sep : { '|', ',', ';' }) {
         StudentInfo header = copyFromString(line, 0, sep);
 
-        if (isHeader(header))
+        if (isHeader(header)) {
+            separator = sep;
             return true;
+        }
     }
 
     return false;
@@ -166,7 +162,6 @@ std::vector<StudentInfo> File::loadFromFile(){
 	}
 
 	unsigned int i = 0;
-    char separator = '|';
 
     while (std::getline(ifile, str_buf)) {
         if (first_line) {
@@ -178,10 +173,20 @@ std::vector<StudentInfo> File::loadFromFile(){
             continue;
 
         // Первая непустая строка: определяем разделитель по шапке
-        header_found = checkHeader();
+        if (!header_found) {
+            header_found = checkHeader();
+            if (header_found)
+                continue;
+            else { //Если первая строка в файле не шапка
+                LOG_ERROR("Некорректный заголовок файла");
+                type = PathType::ERR;
+                return {};
+            }
+        }
 
         StudentInfo res_buf = copyFromString(str_buf, i, separator);
         res_buf.row = i;
+
         result.push_back(res_buf);
         ++i;
     }
@@ -211,23 +216,22 @@ bool File::saveToFile(DataBase& db, const DirectoryEntry& dir) {
         return false;
     }
 
-    const std::string sep = " | ";
-    out << (is_csv ? headerCSV() : headerTXT()); // Шапка такая же, как у созданных файлов
+    out << (is_csv ? headerCSV() : headerTXT(separator)); // Шапка такая же, как у созданных файлов
 
-    for (const StudentInfo& s : db.getInfoVec()) {
+    for (const StudentInfo& s : db.getInfoVec()) { //Заполняем основные поля
         // Пустые поля пишем как "Нет данных", loadFromFile превращает их обратно в пустые,
         // иначе пустое первое поле в TXT сдвинуло бы все колонки
-        const std::string name = s.name.empty() ? file_nodata : s.name;
-        const std::string group = s.group.empty() ? file_nodata : s.group;
-        const std::string num = s.num.empty() ? file_nodata : s.num;
-        const std::string pass = s.pass.empty() ? file_nodata : s.pass;
+        const std::string name = s.name.empty() ? FILE_NODATA : s.name;
+        const std::string group = s.group.empty() ? FILE_NODATA : s.group;
+        const std::string num = s.num.empty() ? FILE_NODATA : s.num;
+        const std::string pass = s.pass.empty() ? FILE_NODATA : s.pass;
 
         if (is_csv)
             out << name << ';' << group << ';' << num << ';' << pass << '\n';
         else
-            out << padChars(name, 20) << sep
-            << padChars(group, 12) << sep
-            << padChars(num, 5) << sep
+            out << padChars(name, 20) << separator
+            << padChars(group, 12) << separator
+            << padChars(num, 5) << separator
             << padChars(pass, 20) << '\n';
     }
 
@@ -307,127 +311,4 @@ OpenResult Explorer::openPath(const DirectoryEntry& entry) {
         return OpenResult::Failed;
     }
     return OpenResult::Failed; // на всякий случай
-}
-
-DirectoryEntry Explorer::getFileEntry() const {
-    return selected_entry;
-}
-
-void Explorer::createTXT(const std::string& name) const {
-    fs::path path = curr_path / utf8ToPath(name);
-
-    if (path.extension() != ".txt")
-        path += ".txt";
-
-    std::error_code ec;
-    if (fs::exists(path, ec)) {
-        LOG_WARN("Файл уже существует: " + pathToUtf8(path));
-        return;
-    }
-
-    std::ofstream file(path);
-    if (!file.is_open()) {
-        LOG_ERROR("Не удалось создать TXT: " + pathToUtf8(path));
-        return;
-    }
-    file << headerTXT(); // Сразу пишем шапку, чтобы файл можно было открыть в программе
-
-    LOG_INFO("Создан TXT: " + pathToUtf8(path));
-}
-
-// Создание CSV
-void Explorer::createCSV(const std::string& name) const {
-    fs::path path = curr_path / utf8ToPath(name);
-
-    if (path.extension() != ".csv")
-        path += ".csv";
-
-    if (std::error_code ec; fs::exists(path, ec)) {
-        LOG_WARN("Файл уже существует: " + pathToUtf8(path));
-        return;
-    }
-
-    std::ofstream file(path);
-    if (!file.is_open()) {
-        LOG_ERROR("Не удалось создать CSV: " + pathToUtf8(path));
-        return;
-    }
-    file << headerCSV(); // Сразу пишем шапку, чтобы файл можно было открыть в программе
-
-    LOG_INFO("Создан CSV: " + pathToUtf8(path));
-}
-
-// Переименование
-void Explorer::renameFile(const DirectoryEntry& entry, const std::string &new_name) const {
-    const fs::path destination = curr_path / utf8ToPath(new_name);
-
-    std::error_code ec;
-
-    if (!fs::exists(entry.path, ec)) {
-        LOG_WARN("Исходный файл не существует");
-        return;
-    }
-
-    if (fs::exists(destination, ec)) {
-        LOG_WARN("Объект с таким именем уже существует");
-        return;
-    }
-
-    fs::rename(entry.path, destination, ec);
-
-    if (ec) {
-        LOG_ERROR("Не удалось переименовать: " + ec.message());
-        return;
-    }
-
-    LOG_INFO("Переименован файл: " + pathToUtf8(destination));
-}
-
-// Удаление
-void Explorer::deleteFile(const DirectoryEntry& entry) {
-    std::error_code ec;
-
-    if (!fs::exists(entry.path, ec)) {
-        LOG_WARN("Объект уже не существует");
-        return;
-    }
-
-    if (fs::is_directory(entry.path, ec)) {
-        LOG_WARN("Удаление папок этим методом запрещено");
-        return;
-    }
-
-    if (!fs::remove(entry.path, ec)) {
-        LOG_ERROR("Не удалось удалить файл: " + pathToUtf8(entry.path));
-        return;
-    }
-
-    LOG_INFO("Удалён файл: " + pathToUtf8(entry.path));
-}
-
-// Копирование
-void Explorer::copyFile(const DirectoryEntry& entry, const std::string& name) const {
-    if (!fs::is_regular_file(entry.path)) {
-        LOG_WARN("Источник не является обычным файлом");
-        return;
-    }
-
-    fs::path destination = curr_path / utf8ToPath(name);
-
-    if (destination.extension().empty())
-        destination += entry.path.extension().string();
-
-    std::error_code ec;
-
-    if (fs::exists(destination, ec)) {
-        LOG_WARN("Файл назначения уже существует");
-        return;
-    }
-
-    if (!fs::copy_file(entry.path, destination, ec)) {
-        LOG_ERROR("Не удалось скопировать файл: " + pathToUtf8(entry.path));
-        return;
-    }
-
-    LOG_INFO("Файл скопирован: " + pathToUtf8(destination));
 }

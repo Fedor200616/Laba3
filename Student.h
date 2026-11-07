@@ -3,8 +3,8 @@
 #include <string>
 #include "Log.h"
 
-constexpr std::string file_nodata;
-constexpr std::string vector_nodata;
+const std::string FILE_NODATA = "Нет данных";
+const std::string VECTOR_NODATA = "";
 
 // Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
@@ -150,9 +150,6 @@ public:
 
     // Задать фильтр: колонка, строка поиска, включён ли он
     void changeFilter(size_t col, const std::string &str, bool b = false);
-
-    // Парсинг базы данных на ошибки
-    size_t checkIntegrity();
 
     bool isDataValid() const {
         return data_valid;

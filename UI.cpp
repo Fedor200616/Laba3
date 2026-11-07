@@ -69,7 +69,7 @@ namespace UI {
             addCell(
                 ss,
                 data.HEADER[i],
-                widths[i]
+                widths[i]+ 1 //Добавляем 1, т.к. нужно место для указателя при изменении
             );
         }
         return ss.str();
@@ -347,7 +347,7 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
         data.getWidthVec()[2] +
         data.getWidthVec()[3] +
         static_cast<int>(menu_out.total.col) +
-        12; // Нужно для ровного отображения получено эксп. путем
+        14 + 5; // Нужно для ровного отображения получено эксп. путем (12 хз как, 5, из-за +1 для каждого поля)))
 
     menu_out.before_show = UI::header(data.numWidth(), data);
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
@@ -386,7 +386,7 @@ std::string Viewer::createString(size_t row) const {
         UI::addCell(
             ss,
             data.getField(row, i),
-            data.getWidthVec()[i],
+            data.getWidthVec()[i] + 1, //Добавляем 1, т.к. иначе курсор выбивает столбец
             act
         );
     }
@@ -400,7 +400,7 @@ bool Viewer::beforeShow() {
     windowSize();
 
     if (data.empty()) {
-        LOG_ERROR("В файле данных о студентах нет записи");
+        LOG_ERROR("В файле данных о студентах нет записи (Viewer)");
         std::cout << "Нет данных для отображения.\n";
         return false;
     }
@@ -526,7 +526,7 @@ std::string EditMenu::createString() const {
         UI::addCell(
             ss,
             data.getField(pos.row, i),
-            data.getWidthVec()[i],
+            data.getWidthVec()[i] + 1, //Из-за места для указателя
             pos.col == i - 1,
             sel_type
         );
@@ -541,7 +541,7 @@ bool EditMenu::beforeShow() {
 	bool res = MenuLogic::beforeShow();
     if (data.empty()) addStr(AddType::End); // Добавляем хотя бы одну строку, если база совсем пустая
 	if (data.empty()) {
-		LOG_ERROR("В файле данных о студентах нет записи");
+		LOG_ERROR("В файле данных о студентах нет записи (EditMenu)");
 		std::cout << "Нет данных для отображения.\n";
 		return false;
 	}
@@ -648,7 +648,7 @@ std::string EditField::createString() const {
         bool cur = (i == pos.col + 1);
         UI::addCell(ss,
             cur ? input_line.display() : data.getField(pos.row, i),
-            data.getWidthVec()[i],
+            data.getWidthVec()[i] + 1, //для места под указателя
             cur,
             UI::SelType::Selected);
     }
@@ -914,14 +914,6 @@ bool ExplorerMenuLogic::beforeShow() {
     return true;
 }
 
-StateType ExplorerMenuLogic::handleNav() {
-    if (menu_out.tab_ent) { // Tab открывает меню работы с файлами в любой папке
-        menu_out.tab_ent = false;
-        return StateType::OpenExplorerTabLogic;
-    }
-    return MenuLogic::handleNav();
-}
-
 DirectoryEntry ExplorerMenuLogic::getTabEntry() const {
     if (menu_out.act.row < entries.size()) {
         const PathType t = entries[menu_out.act.row].type();
@@ -1103,285 +1095,4 @@ void ExplorerMenuLogic::aftEnter() {
         explorer.setDefault(selected_file.path);
         menu_out.act.row = 1;
     }
-}
-
-//=======================ExplorerTabLogic=======================
-
-namespace {
-    std::string repeatStr(const std::string& s, size_t n) { // Повтор строки n раз (для рамок)
-        std::string res;
-        for (size_t i = 0; i < n; ++i)
-            res += s;
-        return res;
-    }
-
-    // Обрезаем строку слева многоточием, не разрывая UTF-8 символы
-    std::string cutLeft(const std::string& s, size_t width) {
-        if (UI::utf8Length(s) <= width)
-            return s;
-        size_t pos = s.size();
-        size_t chars = 0;
-        while (pos > 0 && chars < width - 3) {
-            --pos;
-            while (pos > 0 && (static_cast<unsigned char>(s[pos]) & 0xC0) == 0x80) // назад до начала символа
-                --pos;
-            ++chars;
-        }
-        return "..." + s.substr(pos);
-    }
-}
-
-ExplorerTabLogic::ExplorerTabLogic(const DirectoryEntry& s) : selected_file(s), explorer(s.path) {
-    LOG_INFO("Запуск конструктора ExplorerTab");
-
-    menu_out.menu = {
-        {.name = "Создать файл .TXT", .act_aft = [this]() { startInput(0, ""); }}, //0
-        {.name = "Создать файл .CSV", .act_aft = [this]() { startInput(1, ""); }}, //1
-        {.name = "Действия с выбранным файлом:", .enter = false}, //2
-        {.name = "Переименовать файл", .act_aft = [this]() {
-            startInput(3, pathToUtf8(selected_file.path.filename()));
-        }}, //3
-        {.name = "Копировать файл", .act_aft = [this]() {
-            startInput(4, pathToUtf8(selected_file.path.stem()) + "_copy" + pathToUtf8(selected_file.path.extension()));
-        }}, //4
-        {.name = "Удалить файл", .act_aft = [this]() {
-            message = "";
-            confirm = true;
-        }}, //5
-        {.name = "", .param = [this]() { return inputStr(); }, .show = false, .enter = false}, //6 = INPUT_ROW, рамка ввода
-    };
-    menu_out.total.row = menu_out.menu.size();
-    menu_out.act = { 0, 0 };
-    menu_out.before_state = StateType::OpenExplorer; // Esc и Tab возвращают в проводник
-}
-
-bool ExplorerTabLogic::isFile() const {
-    const PathType t = selected_file.type();
-    return t == PathType::TXT || t == PathType::CSV;
-}
-
-bool ExplorerTabLogic::beforeShow() {
-    const bool file = isFile();
-    const bool busy = typing || confirm;
-
-    // Во время ввода показываем только рамку ввода
-    for (size_t i = 0; i < INPUT_ROW; ++i)
-        menu_out.menu[i].show = !busy && (i < 2 || file);
-    menu_out.menu[INPUT_ROW].show = busy;
-
-    // Скрытые пункты в конец не ставим в total, чтобы навигация не упиралась в них
-    menu_out.total.row = busy ? INPUT_ROW + 1 : (file ? INPUT_ROW : 2);
-    if (busy)
-        menu_out.act.row = INPUT_ROW;
-    else if (menu_out.act.row >= menu_out.total.row)
-        menu_out.act.row = 0;
-    menu_out.ActMark = busy ? "" : "\033[30;47m";
-
-    menu_out.before_show = headStr();
-    menu_out.post_show = postStr();
-    return MenuLogic::beforeShow();
-}
-
-std::string ExplorerTabLogic::headStr() const {
-    const std::string border = repeatStr("─", LINE_WIDTH + 2);
-    const std::string file_name = isFile() ? pathToUtf8(selected_file.path.filename()) : "не выбран";
-
-    std::ostringstream ss;
-    ss << " ┌" << border << "┐\033[K\n";
-    ss << " │ " << UI::padRight("Работа с файлами", LINE_WIDTH) << " │\033[K\n";
-    ss << " │ " << UI::padRight("Папка: " + cutLeft(pathToUtf8(explorer.currentPath()), LINE_WIDTH - 7), LINE_WIDTH) << " │\033[K\n";
-    ss << " │ " << UI::padRight("Файл:  " + cutLeft(file_name, LINE_WIDTH - 7), LINE_WIDTH) << " │\033[K\n";
-    ss << " └" << border << "┘\033[K";
-    return ss.str();
-}
-
-std::string ExplorerTabLogic::inputStr() const {
-    std::ostringstream ss;
-    if (confirm) {
-        ss << "\033[K\n"
-            << " Удалить файл " << pathToUtf8(selected_file.path.filename()) << " ?\033[K\n"
-            << " Это действие нельзя отменить.";
-        return ss.str();
-    }
-
-    std::string title;
-    switch (action) {
-    case 0: title = "Имя нового TXT файла:"; break;
-    case 1: title = "Имя нового CSV файла:"; break;
-    case 3: title = "Новое имя файла:"; break;
-    default: title = "Имя копии файла:"; break;
-    }
-    const std::string border = repeatStr("─", NAME_LEN + 3);
-
-    ss << "\033[K\n";
-    ss << " " << title << "\033[K";
-    ss << UI::padRight(input_line.display(), NAME_LEN + 1) << " \033[K\n"; 
-
-    const std::string text = input_line.text();
-    if (text.empty()) {
-        ss << " Введите имя файла";
-    }
-    else {
-        const std::string full = fullName(text);
-        const std::string err = checkName(full);
-        if (err.empty())
-            ss << " Итоговое имя: " << full;
-        else
-            ss << " \033[31m" << err << "\033[0m";
-    }
-    return ss.str();
-}
-
-std::string ExplorerTabLogic::postStr() const {
-    std::ostringstream ss;
-    if (!message.empty())
-        ss << (message_error ? "\033[31m" : "\033[32m") << " " << message << "\033[0m\033[K\n";
-    if (typing)
-        ss << " Enter - подтвердить, Esc - отмена, стрелки - перемещение курсора\033[K\n";
-    else if (confirm)
-        ss << " Enter - удалить, Esc - отмена\033[K\n";
-    else
-        ss << " Стрелки вверх, вниз - навигация, Enter - выбрать пункт\033[K\n"
-        " Esc или Tab - вернуться к проводнику\033[K\n";
-    return ss.str();
-}
-
-// Приводим имя к нужному расширению, иначе файл пропадет из списка проводника
-std::string ExplorerTabLogic::fullName(const std::string& name) const {
-    const std::string ext = pathToUtf8(utf8ToPath(name).extension());
-    if (action == 0)
-        return ext == ".txt" ? name : name + ".txt";
-    if (action == 1)
-        return ext == ".csv" ? name : name + ".csv";
-    if (ext == ".txt" || ext == ".csv")
-        return name;
-    return name + pathToUtf8(selected_file.path.extension()); // Переименование и копия сохраняют расширение исходного
-}
-
-std::string ExplorerTabLogic::checkName(const std::string& full) const {
-    const fs::path p = utf8ToPath(full);
-    const std::string stem = pathToUtf8(p.stem());
-    if (stem.empty())
-        return "Имя не может быть пустым";
-    if (stem.back() == ' ' || stem.back() == '.')
-        return "Имя не должно заканчиваться пробелом или точкой";
-
-    const fs::path dest = explorer.currentPath() / p;
-    if (action == 3 && dest == selected_file.path)
-        return "Это текущее имя файла";
-    std::error_code ec;
-    if (fs::exists(dest, ec))
-        return "Файл с таким именем уже существует";
-    return "";
-}
-
-void ExplorerTabLogic::startInput(size_t row, const std::string& start_text) {
-    action = row;
-    message = "";
-    input_line.forbidden = L"\\/:*?\"<>|"; // Символы, запрещенные в именах файлов Windows
-    input_line.start(start_text, NAME_LEN);
-    typing = true;
-}
-
-void ExplorerTabLogic::applyInput(const std::string& full) {
-    switch (action) { // По пункту меню понимаем, что именно вводили
-    case 0:
-        explorer.createTXT(full);
-        break;
-    case 1:
-        explorer.createCSV(full);
-        break;
-    case 3:
-        explorer.renameFile(selected_file, full);
-        break;
-    case 4:
-        explorer.copyFile(selected_file, full);
-        break;
-    default:
-        break;
-    }
-
-    // Проверяем результат по факту, Explorer только пишет в лог
-    std::error_code ec;
-    const fs::path dest = explorer.currentPath() / utf8ToPath(full);
-    if (!fs::exists(dest, ec)) {
-        message = "Не удалось выполнить действие, подробности в логе";
-        message_error = true;
-        return;
-    }
-    message_error = false;
-    switch (action) {
-    case 3:
-        message = "Файл переименован: " + full;
-        selected_file = DirectoryEntry(dest); // Выбранным остается переименованный файл
-        break;
-    case 4:
-        message = "Создана копия: " + full;
-        break;
-    default:
-        message = "Создан файл: " + full;
-        break;
-    }
-}
-
-void ExplorerTabLogic::deleteSel() {
-    const std::string name = pathToUtf8(selected_file.path.filename());
-    Explorer::deleteFile(selected_file);
-
-    std::error_code ec;
-    if (fs::exists(selected_file.path, ec)) {
-        message = "Не удалось удалить файл " + name;
-        message_error = true;
-        return;
-    }
-    message = "Файл удален: " + name;
-    message_error = false;
-    selected_file = DirectoryEntry(); // Файла больше нет
-    menu_out.act.row = 0;
-}
-
-StateType ExplorerTabLogic::handleNav() {
-    if (menu_out.tab_ent) // Tab - возврат в проводник
-        return StateType::OpenExplorer;
-
-    if (confirm) { // Подтверждение удаления
-        switch (input::getKey()) {
-        case input::key::Enter:
-            deleteSel();
-            confirm = false;
-            system("cls");
-            break;
-        case input::key::Esc:
-            message = "Удаление отменено";
-            message_error = false;
-            confirm = false;
-            system("cls");
-            break;
-        default:
-            break;
-        }
-        return StateType::NONE;
-    }
-
-    if (!typing)
-        return MenuLogic::handleNav(); // обычная навигация по пунктам
-
-    switch (input_line.handle(input::readKeyEvent())) {
-    case input::TextInput::Result::Accepted: {
-        const std::string text = input_line.text();
-        if (text.empty() || !checkName(fullName(text)).empty())
-            break; // Имя неверное, остаемся во вводе, причина уже показана под рамкой
-        applyInput(fullName(text));
-        typing = false;
-        system("cls");
-        break;
-    }
-    case input::TextInput::Result::Cancelled: // Esc отменяет только ввод, из меню не выходит
-        typing = false;
-        system("cls");
-        break;
-    default:
-        break;
-    }
-    return StateType::NONE;
 }

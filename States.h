@@ -3,7 +3,6 @@
 enum class StateType {
     MainMenu,
     OpenExplorer,
-    OpenExplorerTabLogic,
     SaveDialog,
     ExitDialog,
 

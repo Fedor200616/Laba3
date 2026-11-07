@@ -39,9 +39,7 @@ Application::Application(int argc, char* argv[])
 
 // Основная функция обработки состояний
 void Application::run() {
-    
-
-	bool exit_flag = false;
+    bool exit_flag = false;
     while (!exit_flag) {
         if (app_info.getExitApplication()) {
             return;
@@ -109,16 +107,6 @@ void Application::run() {
                     current_state = buf_state;
                 }
             }
-            if (current_state == StateType::OpenExplorerTabLogic)
-                selEntry = menu.getTabEntry(); // файл под курсором или текущая папка
-            else
-                selEntry = menu.getLastPath();
-            break;
-        }
-        case StateType::OpenExplorerTabLogic: {
-            LOG_INFO("Путь для ExplorerMenuLogic " + pathToUtf8(selEntry.path));
-            ExplorerTabLogic menu(selEntry);
-            current_state = menu.menuShow();
             break;
         }
         case StateType::Viewer:{ // Меню просмотра полей студентов

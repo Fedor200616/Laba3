@@ -96,7 +96,7 @@ namespace validate {
     }
 
     bool noData(const std::string& s){
-        return s == vector_nodata;
+        return s == VECTOR_NODATA;
     }
     
     bool name(const std::string& s) { //Проверка фамилии
@@ -173,7 +173,7 @@ namespace validate {
             return true;
 
         // Проверка длины пароля
-        if (w.size() <= PASS_MIN || w.size() >= PASS_MAX)
+        if (w.size() < PASS_MIN || w.size() > PASS_MAX)
             return false;
 
         bool capital = false;
@@ -318,7 +318,7 @@ bool DataBase::setField(size_t row, Inf col, std::string str) {
         return false;
     }
     if (str.empty()){
-        str = vector_nodata;
+        str = VECTOR_NODATA;
     }
     if (!validate::check(col, str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
@@ -420,35 +420,4 @@ void DataBase::changeFilter(size_t col, const std::string &str, bool b) {
     filter_token = str;
     filter_col = col;
     show_filtered = b;
-}
-
-size_t DataBase::checkIntegrity() {
-    data_valid = true;
-
-    for (size_t i = 0; i < info.size(); ++i) {
-        const StudentInfo& student = info[i];
-
-        // Проверяем нумерацию строк
-        if (student.row != i + 1) {
-            data_valid = false;
-            LOG_ERROR("Нарушена нумерация строк: " +
-                      std::to_string(i));
-            return i;
-        }
-
-        // Проверяем корректность значений полей
-        if (!validate::check(Inf::name, student.name) ||
-            !validate::check(Inf::group, student.group) ||
-            !validate::check(Inf::num, student.num) ||
-            !validate::check(Inf::pass, student.pass)) {
-
-            data_valid = false;
-            LOG_ERROR("Обнаружены некорректные данные в строке: " +
-                      std::to_string(i + 1));
-            return i;
-        }
-    }
-
-    LOG_INFO("Проверка целостности базы данных пройдена");
-    return info.size();
 }

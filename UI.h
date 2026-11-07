@@ -160,7 +160,7 @@ public:
             menu_out.post_show = "В номере группы допустимы только буквы, цифры, дефис и подчёркивание \n";
             break;
         case Inf::pass:
-            menu_out.post_show = "Пароль должен содержать не менее 8 символов и не более %d символов\n"
+            menu_out.post_show = "Пароль должен содержать не менее 8 символов и не более 20 символов\n"
                 "Пароль должен содержать хотя бы одну латинскую букву и латинскую заглавную букву, "
                 "цифру и специальный знак\n";
             break;
@@ -276,7 +276,7 @@ protected:
     size_t field_int;
     std::string field;
     std::string find_str;
-    std::string repl_str = "";
+    std::string repl_str;
     size_t match() const; //совпадения поиска
     std::string line(size_t item, const std::string& value) const;
 
@@ -340,7 +340,6 @@ protected:
     size_t real_total = 0;
     size_t real_act = 0;
     bool beforeShow() override;
-    StateType handleNav() override;
 
     std::string createFileStr(size_t index) const;
     void select(size_t i);
@@ -367,37 +366,4 @@ public:
     void goToDir(const fs::path& p); // Перейти в папку (или в папку файла)
 };
 
-//Класс работы с файлом
-class ExplorerTabLogic : public MenuLogic {
-private:
-    static constexpr size_t LINE_WIDTH = 60; // Ширина рамки шапки
-    static constexpr size_t NAME_LEN = 30; // Максимальная длина вводимого имени
-    static constexpr size_t INPUT_ROW = 6; // Пункт меню, в котором рисуется ввод или подтверждение
-
-    DirectoryEntry selected_file;
-    Explorer explorer;
-
-    size_t action = 0; // Пункт меню, из которого начат ввод (0 - TXT, 1 - CSV, 3 - переименование, 4 - копия)
-    bool typing = false; // Идет ввод имени
-    bool confirm = false; // Ждем подтверждения удаления
-    std::string message = ""; // Результат последнего действия
-    bool message_error = false;
-    input::TextInput input_line;
-
-    bool isFile() const;
-    std::string headStr() const; // Шапка с путем
-    std::string inputStr() const; // Рамка ввода или вопрос об удалении
-    std::string postStr() const; // Результат действия и подсказки по клавишам
-    std::string fullName(const std::string& name) const; // Имя с нужным расширением
-    std::string checkName(const std::string& full) const; // Пустая строка, если имя подходит
-
-    void startInput(size_t row, const std::string& start_text);
-    void applyInput(const std::string& full);
-    void deleteSel();
-
-    bool beforeShow() override;
-    StateType handleNav() override;
-public:
-    explicit ExplorerTabLogic(const DirectoryEntry& sel);
-};
 
