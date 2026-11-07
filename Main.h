@@ -2,15 +2,22 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include "Input.h"
 
 #include "Log.h"
 
 namespace fs = std::filesystem;
 
+static const std::string HELP_COUT = "Программа редактирования данных о студентах.\n"
+    "Используйте аргументы:\n"
+    "-l для записи лога о работе \n-f + <полный путь к файлу> для запуска с открытия выбранного файла\n"
+    "Нажмите Enter";
+
 struct AppConfig {
     fs::path filePath; //Путь к файлу данных из аргументов
     bool do_log = false;
     std::string arg_str;
+    bool exit_application = false;
 
     static AppConfig parseArgs(int argc, char* argv[]) {
         AppConfig config;
@@ -38,11 +45,19 @@ struct AppConfig {
             else if (arg == "-l") { // делать ли лог
                 config.do_log = true;
             }
+            else if (arg == "--help") {
+                std::cout << HELP_COUT;
+                input::getAnyKey();
+                config.exit_application = true;
+                return config;
+            }
             else{
                 LOG_WARN("Неизвестный тип аргумента");
+                std::cout << "Неизвестный тип аргумента, используйте \"--help\" для справки";
+                input::getAnyKey();
+                config.exit_application = true;
             }
         }
-
         return config;
     }
 };
@@ -91,5 +106,9 @@ public:
 
     AppConfig getConfig() const {
         return config;
+    }
+
+    bool getExitApplication() const {
+        return config.exit_application;
     }
 };

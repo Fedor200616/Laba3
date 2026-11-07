@@ -152,18 +152,17 @@ std::vector<StudentInfo> File::loadFromFile(){
     if (filePath.empty() || !fs::exists(filePath)) {
         LOG_ERROR("Файл не существует или не найден: " + pathToUtf8(filePath));
         type = PathType::ERR;
-        return result;
+        return {};
     }
 
 	std::ifstream ifile(filePath);
 
-	
 	std::string str_buf; // промежуточная строка из которой будем брать инфу
 
 	if (!ifile.is_open()) {           // проверяем открыто ли
 		LOG_ERROR("Не удалось открыть файл фамилий\n");
         type = PathType::ERR;
-		return result;
+	    return {};
 	}
 
 	unsigned int i = 0;
@@ -179,35 +178,17 @@ std::vector<StudentInfo> File::loadFromFile(){
             continue;
 
         // Первая непустая строка: определяем разделитель по шапке
-        if (!header_found) {
-            constexpr char separators[] = { '|', ',', ';' };
-            bool ok = false;
-
-            for (char sep : separators) {
-                LOG_INFO(std::string("Попытка анализа с разделителем ") + sep);
-                StudentInfo hdr = copyFromString(str_buf, 0, sep);
-                if (isHeader(hdr)) {
-                    separator = sep;
-                    ok = true;
-                    break;
-                }
-            }
-
-            if (!ok) {
-                LOG_ERROR("Ошибка в шапке файла");
-                type = PathType::ERR;
-                return {};
-            }
-
-            header_found = true;
-            i = 1;
-            continue; // шапку в вектор не записываем
-        }
+        header_found = checkHeader();
 
         StudentInfo res_buf = copyFromString(str_buf, i, separator);
         res_buf.row = i;
         result.push_back(res_buf);
         ++i;
+    }
+    if (!header_found) {
+        LOG_WARN("В обработанном файле отсутствует шапка");
+        type = PathType::ERR;
+        return {};
     }
     LOG_INFO("Файл обработан");
 	LOG_INFO("Количество записей: " + std::to_string(result.size()));
