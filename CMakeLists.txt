@@ -20,3 +20,5 @@ add_executable(Laba3
         Student.h
         UI.cpp
         UI.h)
+
+target_link_options(Laba3 PRIVATE -static -static-libgcc -static-libstdc++)

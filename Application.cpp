@@ -169,7 +169,7 @@ void Application::run() {
 				exit_flag = true;
             break;
         }
-        case StateType::ERROR:
+        case StateType::_ERROR:
 			LOG_ERROR("Произошла ошибка. Завершение работы программы.");
 			std::cout << "Произошла ошибка. Завершение работы программы.\n";
 			std::cout << "Нажмите любую клавишу для возврата в главное меню...\n";

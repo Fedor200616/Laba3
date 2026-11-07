@@ -144,7 +144,7 @@ StateType MenuLogic::menuShow()
     while (next_state == StateType::NONE) {
         if (!beforeShow()) {
             LOG_ERROR("Ошибка перед показом меню. Выход из меню.");
-            return StateType::ERROR;
+            return StateType::_ERROR;
         }
         std::cout << showUI() << "\033[J";   // стереть всё ниже курсора
         next_state = handleNav();
