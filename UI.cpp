@@ -351,7 +351,7 @@ Viewer::Viewer(DataBase& students, Position db_act) : data(students) {
 
     menu_out.before_show = UI::header(data.numWidth(), data);
     menu_out.post_show = std::string(static_cast<size_t>(menu_width), '=') + '\n' + // Создаем строку из символов '=' длиной menu_width
-        "Используйте стрелочки для навигации, ESC для выхода...\n";
+        "Используйте стрелочки для навигации, кнопку Tab для дополнительных функций и ESC для выхода...\n";
 
     if (data.sizeIfFilter() <= 0) {
         LOG_WARN("Нет полей соответствующих фильтру");
@@ -676,7 +676,7 @@ StateType EditField::handleNav() {
 
 //======================FindMenuLogic============================
 
-FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, StateType before_state) : data(d), pos(p), field_int(p.col + 1) {
+FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, const StateType &before_state) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
@@ -777,12 +777,12 @@ StateType FindMenuLogic::handleNav() {
 }
 
 //==========================ReplaceMenu================================
-ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s){
+ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s){
     menu_out.act.row = 2;
 }
 
 //==========================FilterMenu================================
-FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+FilterMenu::FilterMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
     // field_int и field уже выставлены по p.col + 1 в FindMenuLogic
     find_str = data.getFilterStr(); 
     menu_out.menu[1].name = "Фильтр по тексту";
@@ -794,7 +794,7 @@ FilterMenu::FilterMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(
 }
 
 //==========================FindMenu================================
-FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p, b_s) {
+FindMenu::FindMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
     pos_of_find = { p.row, p.col };
     menu_out.menu[2].show = false;
     menu_out.menu[4].name = "";
@@ -802,6 +802,7 @@ FindMenu::FindMenu(DataBase& d, Position& p, StateType b_s) : FindMenuLogic(d, p
     menu_out.menu[4].act_aft = [this]() { pos = pos_of_find; };   // перейти к найденной строке
     menu_out.menu[4].state_aft = StateType::Viewer;
     menu_out.before_state = StateType::MainMenu;
+    menu_out.post_show = "Используйте стрелки вверх/вниз для смены пункта меню. Вправо/влево - для перехода между совпавшими записями";
 }
 
 bool FindMenu::beforeShow() {

@@ -261,7 +261,7 @@ private:
 
 class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
-    FindMenuLogic(DataBase& d, Position& p, StateType before_state);
+    FindMenuLogic(DataBase& d, Position& p, const StateType &before_state);
 protected:
     DataBase& data;
     Position& pos;
@@ -287,18 +287,18 @@ protected:
 
 class ReplaceMenu : public FindMenuLogic {
 public:
-    ReplaceMenu(DataBase& d, Position& p, StateType before_state);
+    ReplaceMenu(DataBase& d, Position& p, const StateType &before_state);
 };
 
 
 class FilterMenu : public FindMenuLogic {
 public:
-    FilterMenu(DataBase& d, Position& p, StateType before_state);
+    FilterMenu(DataBase& d, Position& p, const StateType &before_state);
 };
 
 class FindMenu : public FindMenuLogic {
 public: 
-    FindMenu(DataBase& d, Position& p, StateType before_state);
+    FindMenu(DataBase& d, Position& p, const StateType &before_state);
     Position getPos() const;
 private:
     Position pos_of_find;
