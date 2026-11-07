@@ -36,7 +36,6 @@ static bool search_field(const std::string& data, const std::string& search) {
 }
 
 
-
 namespace validate {
     using namespace Encoding;
     namespace {
@@ -224,6 +223,7 @@ void DataBase::load(const std::vector<StudentInfo>& loaded_data) {
     }
     is_modified = false;
 }
+
 void DataBase::loadBackup() {
     info = backup_info;
     is_modified = false;

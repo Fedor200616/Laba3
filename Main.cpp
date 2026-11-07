@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
     DWORD mode = 0;
     GetConsoleMode(h, &mode);
 	SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING); //включаем поддержку красоты в консоли
-    Application app(argc, argv); // создаем обьект основного контроллера приложения, контроллера
+    Application app(argc, argv); // создаем объект основного контроллера приложения, контроллера
     app.run(); //запускаем программу
     return 0;
 }

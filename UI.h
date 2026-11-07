@@ -117,6 +117,7 @@ protected:
 
 //======================Классы наследники меню===========================
 
+//Главное меню, открывается при запуске приложения
 class MainMenu : public MenuLogic {
 public:
     MainMenu(File& f, DataBase& b);
@@ -132,6 +133,7 @@ private:
 
 };
 
+//Меню типа да/нет
 class YesNoMenu : public MenuLogic {
 public:
     YesNoMenu(const std::string &str, const StateType& before);
@@ -143,6 +145,7 @@ private:
     std::string bef_str;
 };
 
+//Меню сообщения об ошибке
 class NotVerMenu : public MenuLogic {
 public:
     NotVerMenu(const std::string &s, const size_t c) : inf(sizeToInf(c)), str(s) {
@@ -182,6 +185,7 @@ private:
     }
 };
 
+//Меню просмотра файла
 class Viewer : public MenuLogic {
 private:
     DataBase& data;
@@ -209,6 +213,7 @@ private:
 	const int MENU_NUM_TO_SHOW = 3; // Количество строк сверху и снизу от активной, которые будут показаны
 };
 
+//Меню дополнительных функций при работе с файлом
 class ViewerTab : public MenuLogic {
 public:
     ViewerTab(DataBase& db);
@@ -219,6 +224,7 @@ private:
     StateType handleNav() override;
 };
 
+//Меню изменения выбранного поля
 class EditMenu : public MenuLogic {
 private:
     DataBase& data;
@@ -244,7 +250,7 @@ public:
     EditMenu(DataBase& base, Position& db_act);
 }; 
 
-
+//Меня записи нового значения в поле (с клавиатуры)
 class EditField : public MenuLogic {
 public:
     EditField(DataBase& db, Position& p);
@@ -259,6 +265,7 @@ private:
 
 //==========================Меню поиска и его производные========================
 
+//Общий (абстрактный) класс поиска
 class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
     FindMenuLogic(DataBase& d, Position& p, const StateType &before_state);
@@ -285,17 +292,19 @@ protected:
     StateType handleNav() override;
 };
 
+//Класс замены полей по ключевому слову
 class ReplaceMenu : public FindMenuLogic {
 public:
     ReplaceMenu(DataBase& d, Position& p, const StateType &before_state);
 };
 
-
+//Класс фильтрации полей
 class FilterMenu : public FindMenuLogic {
 public:
     FilterMenu(DataBase& d, Position& p, const StateType &before_state);
 };
 
+//Класс поиска поля
 class FindMenu : public FindMenuLogic {
 public: 
     FindMenu(DataBase& d, Position& p, const StateType &before_state);
@@ -309,6 +318,7 @@ private:
 
 //=============================Меню проводника и его наследники====================
 
+//Класс выбора файла
 class ExplorerMenuLogic : public MenuLogic {
 protected:
     static constexpr size_t NAME_WIDTH = 36;// Ограничения чтобы оно не ломало таблицу
@@ -357,7 +367,7 @@ public:
     void goToDir(const fs::path& p); // Перейти в папку (или в папку файла)
 };
 
-
+//Класс работы с файлом
 class ExplorerTabLogic : public MenuLogic {
 private:
     static constexpr size_t LINE_WIDTH = 60; // Ширина рамки шапки

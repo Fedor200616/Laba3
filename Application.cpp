@@ -6,6 +6,10 @@ Application::Application(int argc, char* argv[])
     : app_info(argc, argv),
     file_manager(app_info.getStartPath()),
     explorer(app_info.getStartPath()){
+    if (app_info.getExitApplication()) {
+        return;
+    }
+
     Log::getInstance().init(
         app_info.getExeDirectory(),
         app_info.getConfig().do_log
@@ -15,26 +19,34 @@ Application::Application(int argc, char* argv[])
 
     LOG_INFO(log_message);
 
-    fs::path start_path = app_info.getStartPath();
+    fs::path start_path = app_info.getStartPath(); // получаем файл студентов из аргументов смд
     if (!start_path.empty() && fs::exists(start_path)) { // Импортируем файл, если он указан в флагах запуска
-        auto loaded_students = file_manager.loadFromFile(); 
+        auto loaded_students = file_manager.loadFromFile();
+        if (!file_manager.exist()) {
+            start_with_path = false;
+            system("cls");
+            std::cout << "\nНеверный формат файла! Выберите другой.\n";
+            input::getAnyKey();
+        }
         students_info.load(loaded_students);
-
         current_state = StateType::MainMenu;
         start_with_path = true;
     }
     else {
     }
     db_act_pos = { 0, 0 };
-
 }
 
 // Основная функция обработки состояний
 void Application::run() {
-    // Первоначальная очистка экрана
-    std::cout << "\033[2J\033[H";
+    
+
 	bool exit_flag = false;
     while (!exit_flag) {
+        if (app_info.getExitApplication()) {
+            return;
+        }
+        std::cout << "\033[2J\033[H";
 		system("cls"); // Очистка экрана для Windows
         StateType buf_state = current_state;
         switch (current_state) {

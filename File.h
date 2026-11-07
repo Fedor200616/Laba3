@@ -148,9 +148,10 @@ public:
     bool saveToFile(DataBase& db, const DirectoryEntry& dir);
     fs::path getFilePath() const {return filePath;}
     DirectoryEntry getFileDirEntry() const { return {filePath}; }
+    // существует ли файл
     bool exist() const {
         std::error_code ec;
-        return !filePath.empty() && fs::is_regular_file(filePath, ec);
+        return !filePath.empty() && fs::is_regular_file(filePath, ec) && (type != PathType::ERR);
     }
     bool checkHeader() const;
 
