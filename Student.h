@@ -23,7 +23,27 @@ enum class Inf {
     num
 };
 
+enum class ValRes{
+    APPLY,
+
+    NO_UTF8,
+    EMPTY,
+    UNKNOWN,
+
+    NAME_NOT_VER,
+    GROUP_NOT_VER,
+    NUM_NOT_VER
+    PASS_LENGTH,
+    PASS_NOT_APP_WORD,
+    PASS_NO_UPPER,
+    PASS_NO_LOWER
+    PASS_NO_DIGIT,
+    PASS_NO_PUNCT,
+}
+
 namespace validate {
+    //Функция вывода сообщения об ошибке в зависимости от ошибки
+    std::string valMessage(ValRes res, const std::string& str = "");
     // Проверка символов
     inline bool isLatinLower(wchar_t c);
     inline bool isLatinUpper(wchar_t c);
@@ -34,13 +54,15 @@ namespace validate {
 
     // Проверка полей
     bool noData(const std::string& s); // Если поле пустое, то оно все еще корректно
-    bool name(const std::string& s);
-    bool group(const std::string& s);
-    bool groupNum(const std::string& s);
-    bool password(const std::string& s);
+    ValRes initVal(const std::string& s); //
+    
+    ValRes name(const std::string& s);
+    ValRes group(const std::string& s);
+    ValRes groupNum(const std::string& s);
+    ValRes password(const std::string& s);
 
     // Проверка поля по его типу
-    bool check(Inf field, const std::string& s);
+    ValRes check(Inf field, const std::string& s);
 }
 
 size_t infToSize(Inf inf);

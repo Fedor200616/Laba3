@@ -663,7 +663,7 @@ StateType EditField::handleNav() {
             LOG_INFO("Поле изменено");
         }
         else {
-             NotVerMenu ver_menu(input_line.text(), pos.col + 1);
+            NotVerMenu ver_menu(input_line.text(), pos.col + 1);
              ver_menu.menuShow();
         }
         return StateType::EditMenu;

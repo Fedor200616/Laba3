@@ -152,25 +152,7 @@ public:
         LOG_INFO("Меню отображения ошибки");
         system("cls");
         menu_out.before_show = "Недопустимые символы в введенной строке " + str;
-        switch (inf) {
-        case Inf::name:
-            menu_out.post_show = "В фамилии студента допустимы только буквы и знаки -, _, ' \n";
-            break;
-        case Inf::group:
-            menu_out.post_show = "В номере группы допустимы только буквы, цифры, дефис и подчёркивание \n";
-            break;
-        case Inf::pass:
-            menu_out.post_show = "Пароль должен содержать не менее 8 символов и не более 20 символов\n"
-                "Пароль должен содержать хотя бы одну латинскую букву и латинскую заглавную букву, "
-                "цифру и специальный знак\n";
-            break;
-        case Inf::num:
-            menu_out.post_show = "В номере студента в группе допустимы только цифры\n";
-            break;
-        default:
-            LOG_WARN("Вызвано исключение в меню отображения, неизвестная информация\n");
-            break;
-        }
+        menu.post_show = validate::valMessage()
         menu_out.ActMark = "";
         menu_out.post_show += "Нажмите любую клавишу чтобы вернуться к вводу\n";
         menu_out.before_state = StateType::ANYKEY;
@@ -286,7 +268,7 @@ protected:
 
     void startInput(); // Функция печати для поиска
     void changeField(); // функция смены поля при нажатии enter по нему (вместо стрелочек)
-    void editAll() const;
+    void editAll() const; // Функция замены полей
 
     bool beforeShow() override;
     StateType handleNav() override;
