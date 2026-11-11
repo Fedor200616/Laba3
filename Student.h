@@ -32,16 +32,17 @@ enum class ValRes{
 
     NAME_NOT_VER,
     GROUP_NOT_VER,
-    NUM_NOT_VER
+    NUM_NOT_VER,
     PASS_LENGTH,
     PASS_NOT_APP_WORD,
     PASS_NO_UPPER,
-    PASS_NO_LOWER
+    PASS_NO_LOWER,
     PASS_NO_DIGIT,
     PASS_NO_PUNCT,
-}
+};
 
 namespace validate {
+    std::string info(const Inf& col);
     //Функция вывода сообщения об ошибке в зависимости от ошибки
     std::string valMessage(ValRes res, const std::string& str = "");
     // Проверка символов
@@ -54,7 +55,6 @@ namespace validate {
 
     // Проверка полей
     bool noData(const std::string& s); // Если поле пустое, то оно все еще корректно
-    ValRes initVal(const std::string& s); //
     
     ValRes name(const std::string& s);
     ValRes group(const std::string& s);
@@ -63,6 +63,7 @@ namespace validate {
 
     // Проверка поля по его типу
     ValRes check(Inf field, const std::string& s);
+    bool bCheck(const Inf &field, const std::string& s);
 }
 
 size_t infToSize(Inf inf);
@@ -158,10 +159,10 @@ public:
     void insertRow(size_t row = -1);
 
     // Записать значение в поле по номеру колонки; false, если ввод неверен
-    bool setField(size_t row, size_t col, const std::string &str = "");
+    bool setField(size_t row, const Inf &col, const std::string& str = "");
 
     // Записать значение в поле по типу колонки (Inf); false, если ввод неверен
-    bool setField(size_t row, Inf col, std::string str = "");
+    bool setField(size_t row, size_t col, const std::string &str = "");
 
     // Заменить в колонке col значение на new_str у всех строк, найденных по поиску str
     bool editAllFind(size_t col, const std::string &str, const std::string &new_str);

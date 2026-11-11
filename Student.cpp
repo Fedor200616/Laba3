@@ -63,52 +63,52 @@ namespace validate {
 
     }
 
+    std::string info(const Inf& col) {
+        switch (col) {
+            case Inf::name:
+                return "В фамилии студента допустимы только буквы и знаки -, _";
+            case Inf::group:
+                return "В номере группы допустимы только буквы, цифры, дефис и подчёркивание";
+            case Inf::pass:
+                return "Пароль должен содержать не менее 8 и не более 20 символов, хотя бы одну латинскую букву, цифру и специальные знаки";
+            case Inf::num:
+                return "В номере студента в группе допустимы только цифры";
+            default:
+                return "";
+        }
+    }
+
     std::string valMessage(ValRes res, const std::string& str){
         using enum ValRes; //cpp20+
         std::string out;
         switch(res){
         case APPLY:
-            out = "Данные приняты";
-            break;
+            return "Данные приняты";
         case NO_UTF8:
-            out = "Неверный формат данных, не удалось получить Unicode ";
-            break;
+            return "Неверный формат данных, не удалось получить Unicode ";
         case EMPTY:
-            out = "Пустое поле";
-            break;
+            return "Пустое поле";
         case NAME_NOT_VER:
-            out = "В фамилии студента допустимы только буквы и знаки -, _, '";
-            break;
+            return "В фамилии студента допустимы только буквы и знаки -, _";
         case GROUP_NOT_VER:
-            out = "В номере группы допустимы только буквы, цифры, дефис и подчёркивание";
-            break;
+            return "В номере группы допустимы только буквы, цифры, дефис и подчёркивание";
         case NUM_NOT_VER:
-            out = "В номере студента в группе допустимы только цифры";
-            break;
+            return "В номере студента в группе допустимы только цифры";
         case PASS_LENGTH:
-            out = "Пароль должен содержать не менее 8 и не более 20 символов";
-            break;
+            return "Пароль должен содержать не менее 8 и не более 20 символов";
         case PASS_NOT_APP_WORD:
-            out = "Пароль может содержать только латинские буквы, цифры, специальные знаки";
-            break;
+            return "Пароль может содержать только латинские буквы, цифры, специальные знаки";
         case PASS_NO_UPPER:
-            out = "Пароль должен содержать хотя бы одну заглавную латинскую букву";
-            break;
+            return "Пароль должен содержать хотя бы одну заглавную латинскую букву";
         case PASS_NO_LOWER:
-            out = "Пароль должен содержать хотя бы одну латинскую букву нижнего регистра";
-            break;
+            return "Пароль должен содержать хотя бы одну латинскую букву нижнего регистра";
         case PASS_NO_DIGIT:
-            out = "Пароль должен содержать хотя бы одну цифру";
-            break;
+            return "Пароль должен содержать хотя бы одну цифру";
         case PASS_NO_PUNCT:
-            out = "Пароль должен содержать хотя бы один специальный знак: !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-            break;
+            return "Пароль должен содержать хотя бы один специальный знак: !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
         default:
-            out = "Неизвестный формат ввода, строка не была изменена.";
-            break;
+            return"Неизвестный формат ввода, строка не была изменена.";
         }
-        LOG_INFO(out + " " + str); //Тут мы не разделяем ответственность, но и ладно
-        return out;        
     }
 
     // ---------------- Проверка символов ----------------
@@ -148,8 +148,8 @@ namespace validate {
     }
 
     //Начальная валидация, если все верно возвращает APPLY
-    ValRes initVal(const std::string& s){
-        if (!validUtf8(s)) return NO_UTF8;
+    static ValRes initVal(const std::string& s){
+        if (!validUtf8(s)) return ValRes::NO_UTF8;
         std::wstring w = fromUtf8(s);
 
         if (noData(s) || s.empty())
@@ -161,8 +161,9 @@ namespace validate {
     ValRes name(const std::string& s) { //Проверка фамилии
         auto init = initVal(s);
         if(init != ValRes::APPLY){
-            return init
+            return init;
         }
+        std::wstring w = fromUtf8(s);
 
         // После первой буквы разрешены маленькие буквы и знаки -, _, '
         for (std::size_t i = 1; i < w.size(); ++i) {
@@ -173,14 +174,15 @@ namespace validate {
                 return ValRes::NAME_NOT_VER;
         }
 
-        return true;
+        return ValRes::APPLY;
     }
 
     ValRes group(const std::string& s) { // Проверка группы
         auto init = initVal(s);
         if(init != ValRes::APPLY){
-            return init
+            return init;
         }
+        std::wstring w = fromUtf8(s);
 
         // Разрешены буквы, цифры, дефис и подчёркивание
         for (wchar_t c : w) {
@@ -195,8 +197,9 @@ namespace validate {
     ValRes groupNum(const std::string& s) { // Проверка номера ученика
         auto init = initVal(s);
         if(init != ValRes::APPLY){
-            return init
+            return init;
         }
+        std::wstring w = fromUtf8(s);
 
         // Номер должен состоять только из цифр
         for (wchar_t c : w) {
@@ -209,8 +212,9 @@ namespace validate {
     ValRes password(const std::string& s) { // Проверка пароля
         auto init = initVal(s);
         if(init != ValRes::APPLY){
-            return init
+            return init;
         }
+        std::wstring w = fromUtf8(s);
         // Проверка длины пароля
         if (w.size() < PASS_MIN || w.size() > PASS_MAX)
             return ValRes::PASS_LENGTH;
@@ -236,7 +240,7 @@ namespace validate {
         if (!capital) return ValRes::PASS_NO_UPPER;
         else if (!lower) return ValRes::PASS_NO_LOWER;
         else if (!digit) return ValRes::PASS_NO_DIGIT;
-        else if (!punct) return ValRes::PASS_NO_PUNCT;
+        else if (!special) return ValRes::PASS_NO_PUNCT;
         else return ValRes::APPLY;
     }
 
@@ -253,6 +257,12 @@ namespace validate {
             LOG_ERROR("Неизвестный тип поля");
             return ValRes::UNKNOWN;
         }
+    }
+    bool bCheck(const Inf &field, const std::string& s) {
+        auto b = check(field, s);
+        if (b != ValRes::APPLY && b != ValRes::EMPTY)
+            return false;
+        return true;
     }
 }
 
@@ -349,8 +359,7 @@ void DataBase::updateNum() {
 /// <param name="col">тип колонки ввода</param>
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
-ValRes DataBase::setField(size_t row, Inf col, std::string str) {
-
+bool DataBase::setField(const size_t row, const Inf &col, const std::string& str) {
     LOG_INFO("Поле изменено: строка " + std::to_string(row) +
         " колонка " + std::to_string(infToSize(col)) +
         " старое поле " + getField(row, col) +
@@ -359,12 +368,12 @@ ValRes DataBase::setField(size_t row, Inf col, std::string str) {
         LOG_ERROR("Выход за границы массива базы данных");
         return false;
     }
-    if(validate::check(col, str) != ValRes::APPLY){
-        if (str.empty()){
-            str = VECTOR_NODATA;
-        }
-        
+
+    if (!validate::bCheck(col, str)) {
+        LOG_WARN(validate::valMessage(validate::check(col, str), str));
+        return false;
     }
+
     switch (col) {
     case Inf::name: 
         info[row].name = str;
@@ -392,7 +401,7 @@ ValRes DataBase::setField(size_t row, Inf col, std::string str) {
 /// <param name="col">тип колонки ввода</param>
 /// <param name="str">вводимая строка</param>
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
-bool DataBase::setField(size_t row, size_t col, const std::string &str) {
+bool DataBase::setField(const size_t row, const size_t col, const std::string &str) {
     setModif();
     return setField(row, sizeToInf(col), str);
 }
@@ -433,7 +442,7 @@ void DataBase::insertRow(size_t row) {
 /// <returns>0 если ввод неверен, 1 - если верно</returns>
 bool DataBase::editAllFind(size_t col, const std::string &str, const std::string &new_str) {
 	bool is_edited = false;
-    if (!validate::check(sizeToInf(col), str)) {
+    if (!validate::bCheck(sizeToInf(col), new_str)) {
         LOG_ERROR("Неверные символы в поле, поле: " + str);
         return false;
     }

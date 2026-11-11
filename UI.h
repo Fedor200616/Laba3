@@ -3,8 +3,6 @@
 #include <vector>
 #include <functional>
 #include <Windows.h>
-#include <conio.h>
-#include <cstdlib>
 #include <string>
 
 #include "States.h"
@@ -148,11 +146,12 @@ private:
 //Меню сообщения об ошибке
 class NotVerMenu : public MenuLogic {
 public:
-    NotVerMenu(const std::string &s, const size_t c) : inf(sizeToInf(c)), str(s) {
+    NotVerMenu(const std::string &s, const size_t c) : inf(sizeToInf(c)), str(s), val_res(validate::check(inf, str)) {
         LOG_INFO("Меню отображения ошибки");
+        LOG_INFO(validate::valMessage(val_res) + " " + str);
         system("cls");
         menu_out.before_show = "Недопустимые символы в введенной строке " + str;
-        menu.post_show = validate::valMessage()
+        menu_out.post_show = validate::valMessage(val_res) + "\n";
         menu_out.ActMark = "";
         menu_out.post_show += "Нажмите любую клавишу чтобы вернуться к вводу\n";
         menu_out.before_state = StateType::ANYKEY;
@@ -160,6 +159,7 @@ public:
 private:
     Inf inf;
     std::string str;
+    ValRes val_res;
     StateType handleNav() override {
         bool key = input::getAnyKey();
         system("cls");
@@ -242,6 +242,7 @@ private:
     input::TextInput input_line;
 
     std::string createString() const;
+    bool beforeShow() override;
     StateType handleNav() override;
 };
 
@@ -276,6 +277,8 @@ protected:
 
 //Класс замены полей по ключевому слову
 class ReplaceMenu : public FindMenuLogic {
+protected:
+    bool beforeShow() override;
 public:
     ReplaceMenu(DataBase& d, Position& p, const StateType &before_state);
 };

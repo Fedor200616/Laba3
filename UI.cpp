@@ -635,7 +635,6 @@ EditField::EditField(DataBase& db, Position& p) : data(db), pos(p) {
     menu_out.before_state = StateType::EditMenu;
 
     menu_out.before_show = UI::header(data.numWidth(), data);
-    menu_out.post_show = "\nВведите значение. Enter: сохранить, Esc: отмена\033[K";
 
     // max_len на 1 меньше ширины колонки, чтобы влез курсор ▌
     input_line.start(data.getField(pos.row, pos.col + 1),
@@ -654,6 +653,12 @@ std::string EditField::createString() const {
     }
     ss << "\033[K\n";
     return ss.str();
+}
+
+bool EditField::beforeShow() {
+    menu_out.post_show = validate::info(sizeToInf(pos.col + 1)) +
+        "\nВведите значение. Enter: сохранить, Esc: отмена\033[K";
+    return MenuLogic::beforeShow();
 }
 
 StateType EditField::handleNav() {
@@ -777,6 +782,11 @@ StateType FindMenuLogic::handleNav() {
 }
 
 //==========================ReplaceMenu================================
+bool ReplaceMenu::beforeShow() {
+    menu_out.post_show = validate::info(sizeToInf(pos.col + 1));
+    return FindMenuLogic::beforeShow();
+}
+
 ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s){
     menu_out.act.row = 2;
 }
