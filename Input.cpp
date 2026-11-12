@@ -1,4 +1,6 @@
 #include "Input.h"
+
+#include <sstream>
 #include <Windows.h>
 
 namespace Encoding {

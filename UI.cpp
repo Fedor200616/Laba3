@@ -39,10 +39,10 @@ namespace UI {
         std::string cell_str;
         switch (cell_type) {
         case SelType::Selected:
-            cell_str = "\033[30;47m";          // серый фон
+            cell_str = SEL;          // серый фон
             break;
         case SelType::Underlined:
-            cell_str = "\033[4;97;40m";
+            cell_str = UNDERLINE;
             break;
         default:
             break;
@@ -55,7 +55,7 @@ namespace UI {
             << " ";
 
         if (active)
-            ss << "\033[0m";
+            ss << FORMATING;
 
         ss << "|";
     }
@@ -169,7 +169,7 @@ std::string MenuLogic::showUI() {
     }
 
     std::ostringstream ss;
-    ss << "\033[0m"; // Сброс цвета и стиля
+    ss << NOT_SEL; // Сброс цвета и стиля
     if (!menu_out.before_show.empty()) //Если шапка не прописана, то начинаем меню с первой строки
         ss << menu_out.before_show << '\n'; //Отображение шапки
 
@@ -180,9 +180,9 @@ std::string MenuLogic::showUI() {
         ss << menu_out.menu[i].name;
         if (menu_out.menu[i].param) //Проверяем есть ли параметр у строки
             ss << ' ' << menu_out.menu[i].param();
-        ss << "\033[K\n";
+        ss << FORMATING + "\n";
     }
-    ss << "\033[0m\n";
+    ss << NOT_SEL + "\n";
     ss << menu_out.post_show;
 
     return ss.str();
@@ -390,7 +390,7 @@ std::string Viewer::createString(size_t row) const {
             act
         );
     }
-    ss << "\033[K"; // Возвращаем форматирование
+    ss << FORMATING;
 
     return ss.str();
 }
@@ -532,7 +532,7 @@ std::string EditMenu::createString() const {
         );
     }
 
-    ss << "\033[K\n";   // вместо ss << '\n'
+    ss << FORMATING + "\n";
 
     return ss.str();
 }
@@ -651,13 +651,13 @@ std::string EditField::createString() const {
             cur,
             UI::SelType::Selected);
     }
-    ss << "\033[K\n";
+    ss << FORMATING + "\n";
     return ss.str();
 }
 
 bool EditField::beforeShow() {
     menu_out.post_show = validate::info(sizeToInf(pos.col + 1)) +
-        "\nВведите значение. Enter: сохранить, Esc: отмена\033[K";
+        "\nВведите значение. Enter: сохранить, Esc: отмена" + FORMATING;
     return MenuLogic::beforeShow();
 }
 
@@ -704,7 +704,7 @@ size_t FindMenuLogic::match() const {
 
 std::string FindMenuLogic::line(size_t item, const std::string& value) const {
     bool editing = typing && menu_out.act.row == item;
-    return (editing ? input_line.display() : value) + "\033[K";
+    return (editing ? input_line.display() : value) + FORMATING;
 }
 
 void FindMenuLogic::startInput() {
@@ -755,10 +755,6 @@ void FindMenuLogic::editAll() const {
 
 bool FindMenuLogic::beforeShow() {
     system("cls");
-    if (typing)
-        menu_out.ActMark = "\033[0m";
-    else 
-        menu_out.ActMark = "\033[30;47m";
     return MenuLogic::beforeShow();
 }
 
@@ -1032,10 +1028,10 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) const {
     //Формирование строки
     size_t name_width = index == 1 ? NAME_WIDTH + 1 : NAME_WIDTH; //иначе первая строка почему-то сползает
     if (index == menu_out.act.row) {
-        ss << "\033[30;47m";
+        ss << SEL;
     }
     else
-        ss << "\033[K";
+        ss << FORMATING;
     ss << "|";
     
     UI::addCell(
@@ -1053,7 +1049,7 @@ std::string ExplorerMenuLogic::createFileStr(size_t index) const {
         icon + " " + name,
         name_width
     );
-    ss << "\033[K";
+    ss << FORMATING;
 
     return ss.str();
 }

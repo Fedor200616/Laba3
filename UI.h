@@ -12,6 +12,11 @@
 #include "Log.h"
 #include "Input.h"
 
+constexpr std::string SEL = "\033[97;41m";
+constexpr std::string UNDERLINE = "\033[4;97;40m";
+constexpr std::string NOT_SEL = "\033[0m";
+constexpr std::string COURS_UP = "\033[H";
+constexpr std::string FORMATING = "\033[m";
 
 namespace UI {
     enum class SelType { Selected, Underlined};
@@ -64,8 +69,8 @@ struct MenuOut {
     std::vector<MenuStr> menu;
     std::string post_show;
 
-    std::string ActMark = "\033[30;47m";
-    std::string InactMark = "\033[0m";
+    std::string ActMark = SEL;
+    std::string InactMark = NOT_SEL;
 
     bool tab_ent = false;
 };
@@ -108,7 +113,7 @@ protected:
     virtual StateType handleNav(); // Функция обработки действий пользователя
     
     static bool windowSize() {
-        std::cout << "\033[H";
+        std::cout << COURS_UP;
         return true;
     }
 };
