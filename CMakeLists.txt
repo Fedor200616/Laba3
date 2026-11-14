@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 4.4)
 project(Laba3)
 
 set(CMAKE_CXX_STANDARD 20)
-
 include_directories(.)
 
 add_executable(Laba3
@@ -22,3 +21,4 @@ add_executable(Laba3
         UI.h)
 
 target_link_options(Laba3 PRIVATE -static -static-libgcc -static-libstdc++)
+

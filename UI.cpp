@@ -801,7 +801,8 @@ FilterMenu::FilterMenu(DataBase& d, Position& p, const StateType &b_s) : FindMen
 
 //==========================FindMenu================================
 FindMenu::FindMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
-    pos_of_find = { p.row, p.col };
+    pos_of_find = { 0, p.col };
+    find_str = "";
     menu_out.menu[2].show = false;
     menu_out.menu[4].name = "";
     menu_out.menu[4].param = [this]() { return createString(); };
