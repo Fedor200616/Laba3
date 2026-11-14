@@ -149,6 +149,9 @@ void Application::run() {
             LOG_INFO("Меню поиска");
             FindMenu menu(students_info, db_act_pos, StateType::Viewer);
             current_state = menu.menuShow();
+            if (current_state == menu.getExitState()) { //значит, что пользователь вышел из меню по esc
+                break;
+            }
             db_act_pos = menu.getPos();
             break;
         }
