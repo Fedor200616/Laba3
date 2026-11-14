@@ -298,7 +298,7 @@ unsigned int DataBase::getRow(size_t i) const {
 std::string DataBase::getField(size_t i, Inf field) const {
     if (i >= info.size()) return "";
     switch (field) {
-    case Inf::row: return std::to_string(info[i].row);
+    case Inf::row: return std::to_string(info[i].row + 1);
     case Inf::name: return info[i].name;
     case Inf::group: return info[i].group;
     case Inf::pass: return info[i].pass;
