@@ -257,10 +257,10 @@ private:
 //Общий (абстрактный) класс поиска
 class FindMenuLogic : public MenuLogic { //Абстрактный класс - родитель множества меню поиска и редактирования полей
 public:
-    FindMenuLogic(DataBase& d, Position& p, const StateType &before_state);
+    FindMenuLogic(DataBase& d, const Position &p, const StateType &before_state);
 protected:
     DataBase& data;
-    Position& pos;
+    Position pos;
 
     size_t field_int;
     std::string field;
@@ -286,19 +286,19 @@ class ReplaceMenu : public FindMenuLogic {
 protected:
     bool beforeShow() override;
 public:
-    ReplaceMenu(DataBase& d, Position& p, const StateType &before_state);
+    ReplaceMenu(DataBase& d, const Position &p, const StateType &before_state);
 };
 
 //Класс фильтрации полей
 class FilterMenu : public FindMenuLogic {
 public:
-    FilterMenu(DataBase& d, Position& p, const StateType &before_state);
+    FilterMenu(DataBase& d, const Position &p, const StateType &before_state);
 };
 
 //Класс поиска поля
 class FindMenu : public FindMenuLogic {
 public: 
-    FindMenu(DataBase& d, Position& p, const StateType &before_state);
+    FindMenu(DataBase& d, const Position &p, const StateType &before_state);
     Position getPos() const;
 private:
     Position pos_of_find;

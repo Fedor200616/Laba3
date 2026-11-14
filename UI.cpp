@@ -278,7 +278,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
     using S = StateType;
     menu_out.menu = {
         {.name = "Файл данных: ", .param = [this](){return path_str();}, .state_aft = S::OpenExplorer}, //0
-        {.name = "Меню просмотра данных", .state_aft = S::Viewer, .show = false},
+        {.name = "Редактор данных", .state_aft = S::Viewer, .show = false},
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения", .state_aft = S::Cancel },
         {.name = "Сохранить", .state_aft = S::Save }, //4
@@ -457,9 +457,8 @@ ViewerTab::ViewerTab(DataBase& db) : data(db) {
 
     using S = StateType;
     menu_out.menu = {
-        {.name = "Найти поле", .state_aft = S::FindMenu},
         {.name = "Найти и заменить поля", .state_aft = S::ReplaceAll},
-        {.name = "Фильтр строк ", .param = [this]() {return data.getFilterInf(); } ,.state_aft = S::FilterMenu},
+        {.name = "Фильтр строк", .param = [this]() {return data.getFilterInf(); } ,.state_aft = S::FilterMenu},
         {.name = "Отображение с фильтром", .param = [this]() {return filterShow(); }, .act_aft = [this]() {data.changeFilter(); }},
     };
     menu_out.before_show = "Выберите действие с просмотром данных";
@@ -681,7 +680,7 @@ StateType EditField::handleNav() {
 
 //======================FindMenuLogic============================
 
-FindMenuLogic::FindMenuLogic(DataBase& d, Position& p, const StateType &before_state) : data(d), pos(p), field_int(p.col + 1) {
+FindMenuLogic::FindMenuLogic(DataBase& d, const Position &p, const StateType &before_state) : data(d), pos(p), field_int(p.col + 1) {
     field = data.HEADER[field_int];
     find_str = data.getField(pos.row, field_int);
     repl_str = find_str;
@@ -762,17 +761,17 @@ StateType FindMenuLogic::handleNav() {
     if (!typing) return MenuLogic::handleNav();      // обычная навигация по пунктам
 
     switch (input_line.handle(input::readKeyEvent())) {
-    case input::TextInput::Result::Accepted:
-        *target = input_line.text();
-        typing = false;
-        target = nullptr;
-        break;
-    case input::TextInput::Result::Cancelled:        // Esc отменяет только ввод, из меню не выходит
-        typing = false;
-        target = nullptr;
-        break;
-    default:
-        break;
+        case input::TextInput::Result::Accepted:
+            *target = input_line.text();
+            typing = false;
+            target = nullptr;
+            break;
+        case input::TextInput::Result::Cancelled:        // Esc отменяет только ввод, из меню не выходит
+            typing = false;
+            target = nullptr;
+            break;
+        default:
+            break;
     }
     return StateType::NONE;
 }
@@ -783,14 +782,16 @@ bool ReplaceMenu::beforeShow() {
     return FindMenuLogic::beforeShow();
 }
 
-ReplaceMenu::ReplaceMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s){
+ReplaceMenu::ReplaceMenu(DataBase& d, const Position &p, const StateType &b_s) : FindMenuLogic(d, p, b_s){
     menu_out.act.row = 2;
 }
 
 //==========================FilterMenu================================
-FilterMenu::FilterMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
+FilterMenu::FilterMenu(DataBase& d, const Position &p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
     // field_int и field уже выставлены по p.col + 1 в FindMenuLogic
-    find_str = data.getFilterStr(); 
+    field_int = data.getFilterCol();
+    field = data.HEADER[field_int];
+    find_str = data.getFilterStr();
     menu_out.menu[1].name = "Фильтр по тексту";
     menu_out.menu[2].show = false;
     menu_out.menu[4].name = "Применить фильтр";
@@ -800,7 +801,7 @@ FilterMenu::FilterMenu(DataBase& d, Position& p, const StateType &b_s) : FindMen
 }
 
 //==========================FindMenu================================
-FindMenu::FindMenu(DataBase& d, Position& p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
+FindMenu::FindMenu(DataBase& d, const Position &p, const StateType &b_s) : FindMenuLogic(d, p, b_s) {
     pos_of_find = { 0, p.col };
     find_str = "";
     menu_out.menu[2].show = false;
