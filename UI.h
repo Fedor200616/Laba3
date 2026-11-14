@@ -102,6 +102,7 @@ public:
     Position getActivePosition() const {
         return menu_out.act;
     }
+    StateType getExitState() const {return menu_out.before_state;}
 
 protected:
     MenuOut menu_out;   
