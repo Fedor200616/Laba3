@@ -1,4 +1,3 @@
-#include <format>
 #include <chrono>
 #include <algorithm>
 #include "UI.h"

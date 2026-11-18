@@ -6,7 +6,6 @@
 const std::string FILE_NODATA = "Нет данных";
 const std::string VECTOR_NODATA = "";
 
-// Структуры и enum остаются в заголовочном файле
 struct StudentInfo {
     unsigned int row;
     std::string name;
