@@ -282,8 +282,7 @@ MainMenu::MainMenu(File& f, DataBase& b) : file(f), data(b){
         {.name = "Меню поиска", .state_aft = S::FindMenu}, //2
         {.name = "Отменить изменения", .state_aft = S::Cancel },
         {.name = "Сохранить", .state_aft = S::Save }, //4
-        {.name = "Сохранить как"},
-        {.name = "Выйти из программы", .state_aft = S::EXIT, }, //6
+        {.name = "Выйти из программы", .state_aft = S::EXIT, }, //5
     };
     menu_out.post_show = "Используйте стрелки вверх, вниз для перемещения,\n"
                             "Клавишу Enter для выбора пункта меню";
