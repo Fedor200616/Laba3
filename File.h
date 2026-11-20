@@ -1,7 +1,5 @@
 #pragma once
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <vector>
 #include <Windows.h>
 

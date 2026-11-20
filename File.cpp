@@ -20,10 +20,10 @@ namespace {
         }
     }
     inline bool isHeader(const StudentInfo& r) {
-        return r.name == "Имя" &&
-            r.group == "Группа" &&
-            r.num == "Номер" &&
-            r.pass == "Пароль";
+        return r.name == DataBase::HEADER[1] &&
+                r.group == DataBase::HEADER[2] &&
+                r.pass == DataBase::HEADER[3] &&
+                r.num == DataBase::HEADER[4];
     }
     // Дополнение строки пробелами справа до width СИМВОЛОВ (setw считает байты и ломает кириллицу)
     inline std::string padChars(const std::string& s, size_t width) {
@@ -36,10 +36,10 @@ namespace {
 
     // Шапка TXT
     inline std::string headerTXT(char sep) {
-        return padChars("Имя", 20) + sep
-            + padChars("Группа", 12) + sep
-            + padChars("Номер", 5) + sep
-            + padChars("Пароль", 20) + "\n";
+        return padChars(DataBase::HEADER[1], 20) + sep
+            + padChars(DataBase::HEADER[2], 12) + sep
+            + padChars(DataBase::HEADER[4], 5) + sep
+            + padChars(DataBase::HEADER[3], 20) + "\n";
     }
 
     // Шапка CSV

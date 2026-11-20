@@ -87,7 +87,7 @@ public:
     const int PASS_WIDTH = 20;      // Длина поля пароля
     const int DIGIT_WIDTH = 5;      // Длина поля номера в группе
     const int INFO_COL_COUNT = 5;   // Количество полей в таблице
-    const std::vector<std::string> HEADER = {
+    inline static const std::vector<std::string> HEADER = {
         "#", "Имя", "Группа", "Пароль", "Номер"
     };
 
